@@ -1,23 +1,24 @@
 package main
 
 import (
-	"github.com/KharkivGophers/device-smart-house/config"
-	"github.com/KharkivGophers/device-smart-house/models"
-	"github.com/KharkivGophers/device-smart-house/tcp/connectionupdate"
+	"github.com/giperboloid/devicems/config"
+	"github.com/giperboloid/devicems/models"
+	"github.com/giperboloid/devicems/tcp"
 	log "github.com/Sirupsen/logrus"
 )
 
 func main() {
-
-	configConnParams := models.ConfigConnParams{
+	configConnParams := entities.ConfigConnParams{
 		ConnTypeConf: "tcp",
-		HostConf:     connectionupdate.GetEnvCenter("CENTER_TCP_ADDR"),
+		HostConf:     tcp.GetEnvCenter("CENTER_TCP_ADDR"),
 		PortConf:     "3000",
 	}
 
 	newDevice := config.CreateDevice()
 	newDeviceType := newDevice[0]
-	control := &models.Control{make(chan struct{})}
+	control := &entities.Control{
+		Controller: make(chan struct{}),
+	}
 
 	switch newDeviceType {
 	case "washer":

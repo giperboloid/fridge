@@ -5,9 +5,9 @@ import (
 	"net"
 	"time"
 	"encoding/json"
-	"github.com/KharkivGophers/device-smart-house/models"
+	"github.com/giperboloid/devicems/models"
 	log "github.com/Sirupsen/logrus"
-	"github.com/KharkivGophers/device-smart-house/error"
+	"github.com/giperboloid/devicems/error"
 )
 
 // Connection

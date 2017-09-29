@@ -1,14 +1,67 @@
-package fridgeconfig
+package config
 
 import (
 	"encoding/json"
 	"net"
 	"os"
 	"testing"
-	"github.com/KharkivGophers/device-smart-house/models"
+	"github.com/giperboloid/devicems/entities"
 	"github.com/smartystreets/goconvey/convey"
 	log "github.com/Sirupsen/logrus"
 )
+
+func TestGetTurned(t *testing.T) {
+
+	convey.Convey("Should get valid value", t, func() {
+		testConfig := NewFridgeConfig()
+		testConfig.SetTurned(false)
+		convey.So(testConfig.GetTurned(), convey.ShouldEqual, false)
+	})
+}
+
+func TestSetTurned(t *testing.T) {
+	convey.Convey("Should set valid value", t, func() {
+		testConfig := NewFridgeConfig()
+		testConfig.SetTurned(false)
+		convey.So(testConfig.GetTurned(), convey.ShouldEqual, false)
+	})
+}
+
+func TestGetCollectFreq(t *testing.T) {
+
+	convey.Convey("Should get valid value", t, func() {
+		testConfig := NewFridgeConfig()
+		testConfig.SetCollectFreq(1000)
+		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, 1000)
+	})
+}
+
+func TestSetCollectFreq(t *testing.T) {
+
+	convey.Convey("Should set valid value", t, func() {
+		testConfig := NewFridgeConfig()
+		testConfig.SetCollectFreq(1000)
+		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, 1000)
+	})
+}
+
+
+func TestGetSendFreq(t *testing.T) {
+	testConfig := NewFridgeConfig()
+	convey.Convey("Should get valid value", t, func() {
+		testConfig.SetSendFreq(1000)
+		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, 1000)
+	})
+}
+
+func TestSetSendFreq(t *testing.T) {
+
+	convey.Convey("Should set valid value", t, func() {
+		testConfig := NewFridgeConfig()
+		testConfig.SetSendFreq(1000)
+		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, 1000)
+	})
+}
 
 func TestAddSubIntoPool(t *testing.T) {
 	ch := make(chan struct{})
@@ -37,7 +90,7 @@ func TestRemoveSubFromPool(t *testing.T) {
 func TestUpdateConfig(t *testing.T) {
 	maskOsArgs()
 
-	exCfg := models.FridgeConfig{
+	exCfg := entities.FridgeConfig{
 		TurnedOn:    true,
 		SendFreq:    100,
 		CollectFreq: 50}
@@ -55,7 +108,7 @@ func TestUpdateConfig(t *testing.T) {
 func TestListenConfig(t *testing.T) {
 	maskOsArgs()
 
-	cfg := models.FridgeConfig{
+	cfg := entities.FridgeConfig{
 		TurnedOn:    true,
 		CollectFreq: 1000,
 		SendFreq:    5000}
@@ -100,7 +153,7 @@ func TestListenConfig(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	maskOsArgs()
-	devCfg := models.FridgeConfig{
+	devCfg := entities.FridgeConfig{
 		TurnedOn:    true,
 		CollectFreq: 1000,
 		SendFreq:    5000}
@@ -110,7 +163,7 @@ func TestInit(t *testing.T) {
 	portConf := "3000"
 
 	convey.Convey("Init should receive config", t, func() {
-		control := &models.Control{make(chan struct{})}
+		control := &entities.Control{Controller: make(chan struct{})}
 		ln, _ := net.Listen(connTypeConf, hostConf+":"+portConf)
 		go func() {
 			defer ln.Close()

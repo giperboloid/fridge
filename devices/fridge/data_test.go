@@ -4,18 +4,18 @@ import (
 	"os"
 	"time"
 	"reflect"
-	"github.com/KharkivGophers/device-smart-house/models"
+	"github.com/giperboloid/devicems/models"
 	"testing"
 	"github.com/smartystreets/goconvey/convey"
 )
 
 func TestDataCollector(t *testing.T) {
 	maskOsArgs()
-	var req models.FridgeRequest
+	var req entities.FridgeRequest
 	ticker := time.NewTicker(time.Millisecond)
-	top := make(chan models.FridgeGenerData)
-	bot := make(chan models.FridgeGenerData)
-	reqChan := make(chan models.FridgeRequest)
+	top := make(chan entities.FridgeGenerData)
+	bot := make(chan entities.FridgeGenerData)
+	reqChan := make(chan entities.FridgeRequest)
 	stopInner := make(chan struct{})
 
 	botMap := make(map[int64]float32)
@@ -25,13 +25,13 @@ func TestDataCollector(t *testing.T) {
 
 	botMap[0] = 10.01
 
-	exReq := models.FridgeRequest{
+	exReq := entities.FridgeRequest{
 		Action: "update",
-		Meta: models.Metadata{
+		Meta: entities.Metadata{
 			Type: os.Args[1],
 			Name: os.Args[2],
 			MAC:  os.Args[3]},
-		Data: models.FridgeData{
+		Data: entities.FridgeData{
 			TempCam1: topMap,
 			TempCam2: botMap},
 	}
@@ -39,8 +39,8 @@ func TestDataCollector(t *testing.T) {
 	convey.Convey("DataGenerator should produce structs with data", t, func() {
 
 		go DataCollector(ticker, bot, top, reqChan, stopInner)
-		top <- models.FridgeGenerData{Data: 1.01}
-		bot <- models.FridgeGenerData{Data: 10.01}
+		top <- entities.FridgeGenerData{Data: 1.01}
+		bot <- entities.FridgeGenerData{Data: 10.01}
 
 		time.Sleep(time.Millisecond * 10)
 
@@ -54,7 +54,7 @@ func TestDataCollector(t *testing.T) {
 
 func TestConstructReq(t *testing.T) {
 	os.Args = []string{"cmd", "fridgeconfig", "LG", "00-00-00-00-00-00"}
-	var exReq models.FridgeRequest
+	var exReq entities.FridgeRequest
 	bot := make(map[int64]float32)
 	top := make(map[int64]float32)
 
@@ -66,13 +66,13 @@ func TestConstructReq(t *testing.T) {
 	top[2] = 20.01
 	top[3] = 30.01
 
-	exReq = models.FridgeRequest{
+	exReq = entities.FridgeRequest{
 		Action: "update",
-		Meta: models.Metadata{
+		Meta: entities.Metadata{
 			Type: os.Args[1],
 			Name: os.Args[2],
 			MAC:  os.Args[3]},
-		Data: models.FridgeData{TempCam1: top, TempCam2: bot},
+		Data: entities.FridgeData{TempCam1: top, TempCam2: bot},
 	}
 	convey.Convey("ConstructReq should produce Request struct with received data", t, func() {
 		req := constructReq(top, bot)
