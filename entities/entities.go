@@ -1,42 +1,84 @@
-package models
+package entities
 
 import "time"
 
-type Metadata struct {
+type Server struct {
+	Host string
+	Port string
+}
+
+type ConfigConn struct {
+	Server   Server
+	ConnType string
+}
+
+type TransferConn struct {
+	Server   Server
+	ConnType string
+}
+
+type DevMeta struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
 	MAC  string `json:"mac"`
 }
 
-type ConfigConnParams struct {
-	ConnTypeConf string
-	HostConf string
-	PortConf string
+type FridgeData struct {
+	TempCam1 map[int64]float32 `json:"tempCam1"`
+	TempCam2 map[int64]float32 `json:"tempCam2"`
 }
 
-type TransferConnParams struct {
-	HostOut string
-	PortOut string
-	ConnTypeOut string
+type FridgeRequest struct {
+	Action string     `json:"action"`
+	Time   int64      `json:"time"`
+	Meta   DevMeta   `json:"meta"`
+	Data   FridgeData `json:"data"`
 }
 
 type Response struct {
 	Descr string `json:"descr"`
 }
 
-type Control struct {
-	Controller chan struct{}
+type FridgeConfig struct {
+	TurnedOn    bool   `json:"turnedOn"`
+	CollectFreq int64  `json:"collectFreq"`
+	SendFreq    int64  `json:"sendFreq"`
+	MAC         string `json:"mac"`
 }
 
-func (c *Control) Close() {
-	select {
-	case <- c.Controller:
-	default:
-		close(c.Controller)
+func (c FridgeConfig) IsEmpty() bool {
+	if c.CollectFreq == 0 && c.SendFreq == 0 && c.MAC == "" && c.TurnedOn == false {
+		return true
 	}
+	return false
 }
 
-func (c *Control) Wait() {
-	<- c.Controller
-	<-time.NewTimer(6).C
+
+
+type FridgeGenerData struct {
+	Time int64
+	Data float32
+}
+
+type CollectFridgeData struct {
+	CBot chan FridgeGenerData
+	CTop chan FridgeGenerData
+	ReqChan chan FridgeRequest
+}
+
+type RoutinesController struct {
+	StopChan chan struct{}
+}
+
+func (c *RoutinesController) Wait() {
+	<-c.StopChan
+	<-time.NewTimer(time.Second * 3).C
+}
+
+func (c *RoutinesController) Terminate() {
+	select {
+	case <-c.StopChan:
+	default:
+		close(c.StopChan)
+	}
 }
