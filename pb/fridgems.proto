@@ -5,7 +5,7 @@ package pb;
 // to generate fridgems.pb.go
 
 service FridgeService {
-    rpc SetFridgeData(FridgeDataRequest) returns (FridgeDataResponse) {}
+    rpc SaveFridgeData(FridgeDataRequest) returns (FridgeDataResponse) {}
 }
 
 message FridgeConfigRequest {

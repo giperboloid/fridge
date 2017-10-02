@@ -5,11 +5,12 @@ import (
 	"os"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/giperboloid/devicems/entities"
-	"google.golang.org/grpc"
-	"github.com/giperboloid/devicems/pb"
 	"context"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/giperboloid/fridgems/entities"
+	"github.com/giperboloid/fridgems/pb"
+	"google.golang.org/grpc"
 )
 
 //RunDataCollector setups DataCollector
@@ -238,11 +239,11 @@ func Send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
 
 	pbfr := &pb.FridgeDataRequest{
 		Action: fr.Action,
-		Time: fr.Time,
+		Time:   fr.Time,
 		Meta: &pb.DevMeta{
 			Type: fr.Meta.Type,
 			Name: fr.Meta.Name,
-			Mac: fr.Meta.MAC,
+			Mac:  fr.Meta.MAC,
 		},
 		Data: &pb.FridgeData{
 			TempCam1: fr.Data.TempCam1,
@@ -250,17 +251,15 @@ func Send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
 		},
 	}
 
-	setFridgeData(client, pbfr)
+	saveFridgeData(client, pbfr)
 
 	log.Infoln("Data was sent. Response from center: ")
 }
 
-func setFridgeData(c pb.FridgeServiceClient, req *pb.FridgeDataRequest) {
-	resp, err := c.SetFridgeData(context.Background(), req)
+func saveFridgeData(c pb.FridgeServiceClient, req *pb.FridgeDataRequest) {
+	resp, err := c.SaveFridgeData(context.Background(), req)
 	if err != nil {
 		log.Fatalf("Could not create FridgeData: %v", err)
 	}
-	if resp.Status {
-		log.Printf("Data has been received with status: %s", resp.Status)
-	}
+	log.Printf("Data has been received with status: %s", resp.Status)
 }

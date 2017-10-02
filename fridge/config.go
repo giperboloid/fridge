@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/giperboloid/devicems/entities"
+	"github.com/giperboloid/fridgems/entities"
 )
 
 type FridgeConfig struct {
@@ -26,11 +26,12 @@ func Run(connType string, s entities.Server, rc *entities.RoutinesController, ar
 
 	defer func() {
 		if r := recover(); r != nil {
+			log.Errorf("Run config has failed!: %s", r)
 		}
 	}()
 
 	fc := NewFridgeConfig()
-	fc.RequestFridgeConfig(connType, s.Host, s.Port, rc, args)
+	fc.requestConfig(connType, s, rc, args)
 
 	go RunDataGenerator(fc, collectFridgeData.CBot, collectFridgeData.CTop, rc)
 	go RunDataCollector(fc, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, rc)
@@ -120,32 +121,35 @@ func (fc *FridgeConfig) update(nfc entities.FridgeConfig) {
 
 	switch fc.TurnedOn {
 	case false:
-		log.Warningln("ON PAUSE")
+		log.Info("Status: ON PAUSE")
 	case true:
-		log.Warningln("WORKING")
+		log.Info("Status: RUNNING")
 	}
 }
 
-func (fc *FridgeConfig) RequestFridgeConfig(connType string, host string, port string, c *entities.RoutinesController, args []string) {
-	conn, err := net.Dial(connType, host+":"+port)
+func (fc *FridgeConfig) requestConfig(connType string,s entities.Server, c *entities.RoutinesController, args []string) {
+	conn, err := net.Dial(connType, s.Host+":"+s.Port)
 	for err != nil {
-		log.Error("Can't connect to the server: " + host + ":" + port)
+		log.Error("Can't connect to the server: " + s.Host + ":" + s.Port)
 		panic("No center found!")
 	}
 
 	req := entities.FridgeRequest{
 		Action: "config",
 		Meta: entities.DevMeta{
-			Type: args[0],
-			Name: args[1],
-			MAC:  args[2]},
+			Type: "fridge",
+			Name: args[0],
+			MAC:  args[1],
+		},
 	}
+
+	log.Info("FridgeRequest:", req)
 
 	if err := json.NewEncoder(conn).Encode(req); err != nil {
 		log.Errorf("askConfig(): Encode JSON: %s", err)
 	}
 
-	log.Println("Request:", req)
+	log.Info("FridgeRequest:", req)
 
 	var rfc entities.FridgeConfig
 	if err := json.NewDecoder(conn).Decode(&rfc); err != nil {

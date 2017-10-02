@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 	"testing"
-	"github.com/giperboloid/devicems/entities"
+	"github.com/giperboloid/fridgems/entities"
 	"github.com/smartystreets/goconvey/convey"
 	log "github.com/Sirupsen/logrus"
 )
@@ -182,7 +182,7 @@ func TestInit(t *testing.T) {
 			if r := recover(); r != nil {
 				log.Error(r)
 			}} ()
-		testConfig.RequestFridgeConfig(connTypeConf, hostConf, portConf, control, maskOsArgs())
+		testConfig.requestConfig(connTypeConf, hostConf, portConf, control, maskOsArgs())
 
 		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, 5000)
 		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, 1000)

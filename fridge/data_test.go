@@ -9,7 +9,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/giperboloid/devicems/entities"
+	"github.com/giperboloid/fridgems/entities"
 	"github.com/smartystreets/goconvey/convey"
 )
 
@@ -163,7 +163,7 @@ func TestDataTransfer(t *testing.T) {
 			panic("DataTransfer() Listen: error")
 		}
 
-		control := &entities.RoutinesController{StopChan:make(chan struct{})}
+		control := &entities.RoutinesController{StopChan: make(chan struct{})}
 		go func() {
 			defer ln.Close()
 			server, err := ln.Accept()
@@ -234,7 +234,7 @@ func TestSend(t *testing.T) {
 			if r := recover(); r != nil {
 				log.Error(r)
 			}
-		} ()
+		}()
 		go Send(exReq, client) // request counter is missing
 
 		json.NewDecoder(server).Decode(&req)
