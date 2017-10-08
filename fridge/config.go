@@ -18,17 +18,17 @@ type FridgeConfig struct {
 }
 
 func Run(connType string, s entities.Server, rc *entities.RoutinesController, args []string) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("fridgems has failed: %s", r)
+		}
+	}()
+
 	collectFridgeData := entities.CollectFridgeData{
 		CTop:    make(chan entities.FridgeGenerData, 100), // First Camera
 		CBot:    make(chan entities.FridgeGenerData, 100), // Second Camera
 		ReqChan: make(chan entities.FridgeRequest),
 	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			log.Errorf("Run config has failed!: %s", r)
-		}
-	}()
 
 	fc := NewFridgeConfig()
 	fc.requestConfig(connType, s, rc, args)
@@ -36,6 +36,50 @@ func Run(connType string, s entities.Server, rc *entities.RoutinesController, ar
 	go RunDataGenerator(fc, collectFridgeData.CBot, collectFridgeData.CTop, rc)
 	go RunDataCollector(fc, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, rc)
 	go DataTransfer(s, collectFridgeData.ReqChan, rc)
+}
+
+func (fc *FridgeConfig) requestConfig(connType string,s entities.Server, c *entities.RoutinesController, args []string) {
+	conn, err := net.Dial(connType, s.Host+":"+s.Port)
+	for err != nil {
+		log.Error("can't connect to the centerms: " + s.Host + ":" + s.Port)
+		panic("centerms hasn't been found")
+	}
+
+	req := entities.FridgeRequest{
+		Action: "config",
+		Meta: entities.DevMeta{
+			Type: "fridge",
+			Name: args[0],
+			MAC:  args[1],
+		},
+	}
+
+	if err := json.NewEncoder(conn).Encode(req); err != nil {
+		log.Errorf("askConfig(): Encode JSON: %s", err)
+	}
+
+	var rfc entities.FridgeConfig
+	if err := json.NewDecoder(conn).Decode(&rfc); err != nil {
+		log.Errorf("askConfig(): Decode JSON: %s", err)
+	}
+
+	if err != nil && rfc.IsEmpty() {
+		panic("Connection has been closed by center")
+	}
+
+	fc.update(rfc)
+
+	go func() {
+		for {
+			defer func() {
+				if r := recover(); r != nil {
+					c.Terminate()
+					log.Error("Initialization Failed")
+				}
+			}()
+			listenConfig(fc, conn)
+		}
+	}()
 }
 
 func NewFridgeConfig() *FridgeConfig {
@@ -90,14 +134,14 @@ func (fc *FridgeConfig) RemoveSubscriber(key string) {
 
 func listenConfig(devConfig *FridgeConfig, conn net.Conn) {
 	var fc entities.FridgeConfig
-
 	if err := json.NewDecoder(conn).Decode(&fc); err != nil {
-		panic("No config found!")
+		panic("centerms hasn't been found")
 	}
 
 	r := entities.Response{
-		Descr: "Config have been received",
+		Descr: "config have been received",
 	}
+
 	devConfig.update(fc)
 	go publishConfig(devConfig)
 
@@ -106,8 +150,8 @@ func listenConfig(devConfig *FridgeConfig, conn net.Conn) {
 	}
 }
 
-func publishConfig(d *FridgeConfig) {
-	for _, v := range d.SubsPool {
+func publishConfig(fc *FridgeConfig) {
+	for _, v := range fc.SubsPool {
 		v <- struct{}{}
 	}
 }
@@ -125,52 +169,4 @@ func (fc *FridgeConfig) update(nfc entities.FridgeConfig) {
 	case true:
 		log.Info("Status: RUNNING")
 	}
-}
-
-func (fc *FridgeConfig) requestConfig(connType string,s entities.Server, c *entities.RoutinesController, args []string) {
-	conn, err := net.Dial(connType, s.Host+":"+s.Port)
-	for err != nil {
-		log.Error("Can't connect to the server: " + s.Host + ":" + s.Port)
-		panic("No center found!")
-	}
-
-	req := entities.FridgeRequest{
-		Action: "config",
-		Meta: entities.DevMeta{
-			Type: "fridge",
-			Name: args[0],
-			MAC:  args[1],
-		},
-	}
-
-	log.Info("FridgeRequest:", req)
-
-	if err := json.NewEncoder(conn).Encode(req); err != nil {
-		log.Errorf("askConfig(): Encode JSON: %s", err)
-	}
-
-	log.Info("FridgeRequest:", req)
-
-	var rfc entities.FridgeConfig
-	if err := json.NewDecoder(conn).Decode(&rfc); err != nil {
-		log.Errorf("askConfig(): Decode JSON: %s", err)
-	}
-
-	if err != nil && rfc.IsEmpty() {
-		panic("Connection has been closed by center")
-	}
-
-	fc.update(rfc)
-
-	go func() {
-		for {
-			defer func() {
-				if r := recover(); r != nil {
-					c.Terminate()
-					log.Error("Initialization Failed")
-				}
-			}()
-			listenConfig(fc, conn)
-		}
-	}()
 }
