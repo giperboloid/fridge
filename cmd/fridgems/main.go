@@ -14,12 +14,12 @@ func main() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("fridgems: main(): panic: %s", r)
+			log.Errorf("main(): panic(): %s", r)
 			ctrl.Terminate()
 		}
 	}()
 
-	log.Infof("fridge: name: [%s] MAC: [%s]", fridgeParams[0], fridgeParams[1])
+	log.Infof("fridge: name:[%s] MAC:[%s]", fridgeParams[0], fridgeParams[1])
 
 	collectFridgeData := entities.CollectFridgeData{
 		CTop:    make(chan entities.FridgeGenerData, 100),
@@ -35,5 +35,5 @@ func main() {
 	go fridge.DataSender(centerms, collectFridgeData.ReqChan, ctrl)
 
 	ctrl.Wait()
-	log.Info("fridgems: microservice is down")
+	log.Info("fridgems is down")
 }

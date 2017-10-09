@@ -30,7 +30,7 @@ func TestDataCollector(t *testing.T) {
 	botMap[0] = 10.01
 
 	exReq := entities.FridgeRequest{
-		Action: "updateConfig",
+		Action: "update",
 		Meta: entities.DevMeta{
 			Type: os.Args[1],
 			Name: os.Args[2],
@@ -71,7 +71,7 @@ func TestConstructReq(t *testing.T) {
 	top[3] = 30.01
 
 	exReq = entities.FridgeRequest{
-		Action: "updateConfig",
+		Action: "update",
 		Meta: entities.DevMeta{
 			Type: os.Args[1],
 			Name: os.Args[2],
@@ -117,7 +117,7 @@ func TestDataGenerator(t *testing.T) {
 
 func TestMakeTimeStamp(t *testing.T) {
 	convey.Convey("MakeTimeStamp should return timestamp as int64", t, func() {
-		t := makeTimestamp()
+		t := currentTimestamp()
 		convey.So(reflect.TypeOf(t).String(), convey.ShouldEqual, "int64")
 		convey.So(t, convey.ShouldNotBeEmpty)
 		convey.So(t, convey.ShouldNotEqual, 0)
@@ -144,7 +144,7 @@ func TestDataTransfer(t *testing.T) {
 
 	var req entities.FridgeRequest
 	exReq := entities.FridgeRequest{
-		Action: "updateConfig",
+		Action: "update",
 		Meta: entities.DevMeta{
 			Type: os.Args[1],
 			Name: os.Args[2],
@@ -163,7 +163,7 @@ func TestDataTransfer(t *testing.T) {
 			panic("DataSender() Listen: error")
 		}
 
-		control := &entities.RoutinesController{StopChan:make(chan struct{})}
+		control := &entities.RoutinesController{StopChan: make(chan struct{})}
 		go func() {
 			defer ln.Close()
 			server, err := ln.Accept()
@@ -221,7 +221,7 @@ func TestSend(t *testing.T) {
 	defer server.Close()
 
 	exReq := entities.FridgeRequest{
-		Action: "updateConfig",
+		Action: "update",
 		Meta: entities.DevMeta{
 			Type: os.Args[1],
 			Name: os.Args[2],
@@ -229,13 +229,13 @@ func TestSend(t *testing.T) {
 	}
 
 	resp = entities.Response{Descr: "Struct has been received"}
-	convey.Convey("Send should send JSON to the server", t, func() {
+	convey.Convey("send should send JSON to the server", t, func() {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Error(r)
 			}
-		} ()
-		go Send(exReq, client) // request counter is missing
+		}()
+		go send(exReq, client) // request counter is missing
 
 		json.NewDecoder(server).Decode(&req)
 		json.NewEncoder(server).Encode(resp)

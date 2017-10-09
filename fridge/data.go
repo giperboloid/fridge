@@ -1,11 +1,14 @@
 package fridge
 
 import (
+	"bytes"
 	"math/rand"
 	"os"
 	"time"
 
 	"context"
+
+	"encoding/json"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
@@ -15,7 +18,13 @@ import (
 
 //DataCollector setups dataCollector
 func DataCollector(с *Configuration, cBot <-chan entities.FridgeGenerData,
-	cTop <-chan entities.FridgeGenerData, ReqChan chan entities.FridgeRequest, c *entities.RoutinesController) {
+	cTop <-chan entities.FridgeGenerData, ReqChan chan entities.FridgeRequest, ctrl *entities.RoutinesController) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("DataCollector(): panic(): %s", r)
+			ctrl.Terminate()
+		}
+	}()
 
 	duration := с.GetSendFreq()
 	stopInner := make(chan struct{})
@@ -56,8 +65,8 @@ func DataCollector(с *Configuration, cBot <-chan entities.FridgeGenerData,
 					log.Println("dataCollector() has been killed")
 				}
 			}
-		case <-c.StopChan:
-			log.Error("Data Collector Failed")
+		case <-ctrl.StopChan:
+			log.Error("DataCollector() is down")
 			return
 		}
 	}
@@ -96,12 +105,13 @@ func constructReq(mTop map[int64]float32, mBot map[int64]float32) entities.Fridg
 	fd.TempCam1 = mTop
 
 	fr := entities.FridgeRequest{
-		Action: "updateConfig",
+		Action: "update",
 		Time:   time.Now().UnixNano(),
 		Meta: entities.DevMeta{
-			Type: args[0],
-			Name: args[1],
-			MAC:  args[2]},
+			Type: devType,
+			Name: args[0],
+			MAC:  args[1],
+		},
 		Data: fd,
 	}
 	return fr
@@ -110,6 +120,12 @@ func constructReq(mTop map[int64]float32, mBot map[int64]float32) entities.Fridg
 //DataGenerator setups dataGenerator
 func DataGenerator(c *Configuration, cBot chan<- entities.FridgeGenerData,
 	cTop chan<- entities.FridgeGenerData, ctrl *entities.RoutinesController) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("DataGenerator(): panic(): %s", r)
+			ctrl.Terminate()
+		}
+	}()
 
 	duration := c.GetCollectFreq()
 	ticker := time.NewTicker(time.Duration(duration) * time.Millisecond)
@@ -152,7 +168,7 @@ func DataGenerator(c *Configuration, cBot chan<- entities.FridgeGenerData,
 				}
 			}
 		case <-ctrl.StopChan:
-			log.Error("Data Generator Failed")
+			log.Error("DataGenerator() is down")
 			return
 		}
 	}
@@ -164,8 +180,8 @@ func dataGenerator(t *time.Ticker, cBot chan<- entities.FridgeGenerData, cTop ch
 	for {
 		select {
 		case <-t.C:
-			cTop <- entities.FridgeGenerData{Time: makeTimestamp(), Data: rand.Float32() * 10}
-			cBot <- entities.FridgeGenerData{Time: makeTimestamp(), Data: (rand.Float32() * 10) - 8}
+			cTop <- entities.FridgeGenerData{Time: currentTimestamp(), Data: rand.Float32() * 10}
+			cBot <- entities.FridgeGenerData{Time: currentTimestamp(), Data: (rand.Float32() * 10) - 8}
 		case <-stopInner:
 			log.Println("dataGenerator(): wg.Done()")
 			return
@@ -173,12 +189,18 @@ func dataGenerator(t *time.Ticker, cBot chan<- entities.FridgeGenerData, cTop ch
 	}
 }
 
-func makeTimestamp() int64 {
+func currentTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
 //DataSender func sends request as JSON to the centre
 func DataSender(s entities.Server, reqChan chan entities.FridgeRequest, c *entities.RoutinesController) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("DataSender(): panic(): %s", r)
+		}
+	}()
+
 	transferConn := entities.TransferConn{
 		Server: entities.Server{
 			Host: s.Host,
@@ -206,10 +228,10 @@ func DataSender(s entities.Server, reqChan chan entities.FridgeRequest, c *entit
 						c.Terminate()
 					}
 				}()
-				Send(r, conn)
+				send(r, conn)
 			}()
 		case <-c.StopChan:
-			log.Error("Data Transfer Failed")
+			log.Error("DataSender(): data sending has failed")
 			return
 		}
 	}
@@ -220,7 +242,7 @@ func Dial(s entities.Server) *grpc.ClientConn {
 	conn, err := grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
 	for err != nil {
 		if count >= 5 {
-			panic("Can't connect to the server: send")
+			panic("Dial(): can't connect to the centerms")
 		}
 		time.Sleep(time.Second)
 		conn, err = grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
@@ -228,16 +250,22 @@ func Dial(s entities.Server) *grpc.ClientConn {
 			log.Errorf("getDial(): %s", err)
 		}
 		count++
-		log.Warningln("Reconnect count: ", count)
+		log.Infof("reconnect count: %d", count)
 	}
 	return conn
 }
 
-func Send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
+func send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
 	fr.Time = time.Now().UnixNano()
-	client := pb.NewFridgeServiceClient(conn)
+	client := pb.NewDevServiceClient(conn)
 
-	pbfr := &pb.FridgeDataRequest{
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(fr.Data)
+	if err != nil {
+		panic("data can't be encoded for sending")
+	}
+
+	pbfr := &pb.SaveDevDataRequest{
 		Action: fr.Action,
 		Time:   fr.Time,
 		Meta: &pb.DevMeta{
@@ -245,21 +273,16 @@ func Send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
 			Name: fr.Meta.Name,
 			Mac:  fr.Meta.MAC,
 		},
-		Data: &pb.FridgeData{
-			TempCam1: fr.Data.TempCam1,
-			TempCam2: fr.Data.TempCam2,
-		},
+		Data: buf.Bytes(),
 	}
 
-	setFridgeData(client, pbfr)
+	saveDevData(client, pbfr)
 }
 
-func setFridgeData(c pb.FridgeServiceClient, req *pb.FridgeDataRequest) {
-	resp, err := c.SetFridgeData(context.Background(), req)
+func saveDevData(c pb.DevServiceClient, req *pb.SaveDevDataRequest) {
+	resp, err := c.SaveDevData(context.Background(), req)
 	if err != nil {
-		log.Fatalf("Could not create FridgeData: %v", err)
+		log.Error("saveFridgeData(): SaveFridgeData() has failed", err)
 	}
-	if resp.Status == "" {
-		log.Printf("center has received data with status: %s", resp.Status)
-	}
+	log.Infof("centerms has received data with status: %s", resp.Status)
 }

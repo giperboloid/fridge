@@ -1,15 +1,15 @@
 FROM alpine
-MAINTAINER Kharkiv Gophers (kostyamol@gmail.com)
+MAINTAINER Molchanov Kostiantyn (kostyamol@gmail.com)
 
-RUN mkdir -p /home/device-smart-house/bin
+RUN mkdir -p /home/fridgems/bin
 
-WORKDIR /home/device-smart-house/bin
-COPY ./cmd/device-smart-house .
+WORKDIR /home/fridgems/bin
+COPY ./cmd/fridgems .
 
 RUN \  
-    chown daemon device-smart-house && \
-    chmod +x device-smart-house
+    chown daemon fridgems && \
+    chmod +x fridgems
     
 USER daemon
-ENTRYPOINT ["./device-smart-house"]
-CMD ["fridge", "LG", "FF:FF:FF:FF:FF:FF"]
+ENTRYPOINT ["./fridgems"]
+CMD ["LG", "FF:FF:FF:FF:FF:FF"]

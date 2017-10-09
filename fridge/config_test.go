@@ -95,9 +95,9 @@ func TestUpdateConfig(t *testing.T) {
 		SendFreq:    100,
 		CollectFreq: 50}
 
-	convey.Convey("UpdateConfig should updateConfig struct by new struct's values", t, func() {
+	convey.Convey("UpdateConfig should update struct by new struct's values", t, func() {
 		testConfig := NewConfiguration()
-		testConfig.updateConfig(exCfg)
+		testConfig.update(exCfg)
 		convey.So(testConfig.GetTurnedOn(), convey.ShouldEqual, exCfg.TurnedOn)
 		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, exCfg.CollectFreq)
 		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, exCfg.SendFreq)
