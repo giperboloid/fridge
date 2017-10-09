@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 	"testing"
-	"github.com/giperboloid/devicems/entities"
+	"github.com/giperboloid/fridgems/entities"
 	"github.com/smartystreets/goconvey/convey"
 	log "github.com/Sirupsen/logrus"
 )
@@ -13,16 +13,16 @@ import (
 func TestGetTurned(t *testing.T) {
 
 	convey.Convey("Should get valid value", t, func() {
-		testConfig := NewFridgeConfig()
-		testConfig.SetTurned(false)
+		testConfig := NewConfiguration()
+		testConfig.SetTurnedOn(false)
 		convey.So(testConfig.GetTurnedOn(), convey.ShouldEqual, false)
 	})
 }
 
 func TestSetTurned(t *testing.T) {
 	convey.Convey("Should set valid value", t, func() {
-		testConfig := NewFridgeConfig()
-		testConfig.SetTurned(false)
+		testConfig := NewConfiguration()
+		testConfig.SetTurnedOn(false)
 		convey.So(testConfig.GetTurnedOn(), convey.ShouldEqual, false)
 	})
 }
@@ -30,7 +30,7 @@ func TestSetTurned(t *testing.T) {
 func TestGetCollectFreq(t *testing.T) {
 
 	convey.Convey("Should get valid value", t, func() {
-		testConfig := NewFridgeConfig()
+		testConfig := NewConfiguration()
 		testConfig.SetCollectFreq(1000)
 		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, 1000)
 	})
@@ -39,7 +39,7 @@ func TestGetCollectFreq(t *testing.T) {
 func TestSetCollectFreq(t *testing.T) {
 
 	convey.Convey("Should set valid value", t, func() {
-		testConfig := NewFridgeConfig()
+		testConfig := NewConfiguration()
 		testConfig.SetCollectFreq(1000)
 		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, 1000)
 	})
@@ -47,7 +47,7 @@ func TestSetCollectFreq(t *testing.T) {
 
 
 func TestGetSendFreq(t *testing.T) {
-	testConfig := NewFridgeConfig()
+	testConfig := NewConfiguration()
 	convey.Convey("Should get valid value", t, func() {
 		testConfig.SetSendFreq(1000)
 		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, 1000)
@@ -57,7 +57,7 @@ func TestGetSendFreq(t *testing.T) {
 func TestSetSendFreq(t *testing.T) {
 
 	convey.Convey("Should set valid value", t, func() {
-		testConfig := NewFridgeConfig()
+		testConfig := NewConfiguration()
 		testConfig.SetSendFreq(1000)
 		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, 1000)
 	})
@@ -67,9 +67,9 @@ func TestAddSubIntoPool(t *testing.T) {
 	ch := make(chan struct{})
 	key := "19-29"
 
-	convey.Convey("AddSubscriber should add chan into the pool", t, func() {
-		testConfig := NewFridgeConfig()
-		testConfig.AddSubscriber(key, ch)
+	convey.Convey("Subscribe should add chan into the pool", t, func() {
+		testConfig := NewConfiguration()
+		testConfig.Subscribe(key, ch)
 		convey.So(testConfig.SubsPool[key], convey.ShouldEqual, ch)
 	})
 }
@@ -78,11 +78,11 @@ func TestRemoveSubFromPool(t *testing.T) {
 	ch := make(chan struct{})
 	key := "19-29"
 
-	convey.Convey("RemoveSubscriber should remove chan from the pool", t, func() {
-		testConfig := NewFridgeConfig()
-		testConfig.AddSubscriber(key, ch)
+	convey.Convey("Unsubscribe should remove chan from the pool", t, func() {
+		testConfig := NewConfiguration()
+		testConfig.Subscribe(key, ch)
 
-		testConfig.RemoveSubscriber(key)
+		testConfig.Unsubscribe(key)
 		convey.So(testConfig.SubsPool[key], convey.ShouldEqual, nil)
 	})
 }
@@ -95,9 +95,9 @@ func TestUpdateConfig(t *testing.T) {
 		SendFreq:    100,
 		CollectFreq: 50}
 
-	convey.Convey("UpdateConfig should update struct by new struct's values", t, func() {
-		testConfig := NewFridgeConfig()
-		testConfig.update(exCfg)
+	convey.Convey("UpdateConfig should updateConfig struct by new struct's values", t, func() {
+		testConfig := NewConfiguration()
+		testConfig.updateConfig(exCfg)
 		convey.So(testConfig.GetTurnedOn(), convey.ShouldEqual, exCfg.TurnedOn)
 		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, exCfg.CollectFreq)
 		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, exCfg.SendFreq)
@@ -136,7 +136,7 @@ func TestListenConfig(t *testing.T) {
 		if err != nil {
 			t.Fail()
 		}
-		testConfig := NewFridgeConfig()
+		testConfig := NewConfiguration()
 
 		defer func() {
 			if r := recover(); r != nil {
@@ -176,13 +176,13 @@ func TestInit(t *testing.T) {
 				t.Fail()
 			}
 		}()
-		testConfig := NewFridgeConfig()
+		testConfig := NewConfiguration()
 
 		defer func() {
 			if r := recover(); r != nil {
 				log.Error(r)
 			}} ()
-		testConfig.RequestFridgeConfig(connTypeConf, hostConf, portConf, control, maskOsArgs())
+		testConfig.RequestConfig(connTypeConf, hostConf, portConf, control, maskOsArgs())
 
 		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, 5000)
 		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, 1000)

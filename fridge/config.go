@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/giperboloid/devicems/entities"
+	"github.com/giperboloid/fridgems/entities"
 )
 
-type FridgeConfig struct {
+type Configuration struct {
 	sync.Mutex
 	TurnedOn    bool
 	CollectFreq int64
@@ -17,120 +17,17 @@ type FridgeConfig struct {
 	SubsPool    map[string]chan struct{}
 }
 
-func Run(connType string, s entities.Server, rc *entities.RoutinesController, args []string) {
-	collectFridgeData := entities.CollectFridgeData{
-		CTop:    make(chan entities.FridgeGenerData, 100), // First Camera
-		CBot:    make(chan entities.FridgeGenerData, 100), // Second Camera
-		ReqChan: make(chan entities.FridgeRequest),
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-		}
-	}()
-
-	fc := NewFridgeConfig()
-	fc.RequestFridgeConfig(connType, s.Host, s.Port, rc, args)
-
-	go RunDataGenerator(fc, collectFridgeData.CBot, collectFridgeData.CTop, rc)
-	go RunDataCollector(fc, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, rc)
-	go DataTransfer(s, collectFridgeData.ReqChan, rc)
+func NewConfiguration() *Configuration {
+	c := &Configuration{}
+	c.SubsPool = make(map[string]chan struct{})
+	return c
 }
 
-func NewFridgeConfig() *FridgeConfig {
-	conf := &FridgeConfig{}
-	conf.SubsPool = make(map[string]chan struct{})
-	return conf
-}
-
-func (fc *FridgeConfig) GetTurnedOn() bool {
-	fc.Mutex.Lock()
-	defer fc.Mutex.Unlock()
-	return fc.TurnedOn
-}
-func (fc *FridgeConfig) SetTurned(b bool) {
-	fc.Mutex.Lock()
-	fc.TurnedOn = b
-	fc.Mutex.Unlock()
-}
-
-func (fc *FridgeConfig) GetCollectFreq() int64 {
-	fc.Mutex.Lock()
-	defer fc.Mutex.Unlock()
-	return fc.CollectFreq
-}
-func (fc *FridgeConfig) SetCollectFreq(cf int64) {
-	fc.Mutex.Lock()
-	fc.CollectFreq = cf
-	fc.Mutex.Unlock()
-}
-
-func (fc *FridgeConfig) GetSendFreq() int64 {
-	fc.Mutex.Lock()
-	defer fc.Mutex.Unlock()
-	return fc.SendFreq
-}
-func (fc *FridgeConfig) SetSendFreq(sf int64) {
-	fc.Mutex.Lock()
-	fc.SendFreq = sf
-	fc.Mutex.Unlock()
-}
-
-func (fc *FridgeConfig) AddSubscriber(key string, value chan struct{}) {
-	fc.Mutex.Lock()
-	fc.SubsPool[key] = value
-	fc.Mutex.Unlock()
-}
-func (fc *FridgeConfig) RemoveSubscriber(key string) {
-	fc.Mutex.Lock()
-	delete(fc.SubsPool, key)
-	fc.Mutex.Unlock()
-}
-
-func listenConfig(devConfig *FridgeConfig, conn net.Conn) {
-	var fc entities.FridgeConfig
-
-	if err := json.NewDecoder(conn).Decode(&fc); err != nil {
-		panic("No config found!")
-	}
-
-	r := entities.Response{
-		Descr: "Config have been received",
-	}
-	devConfig.update(fc)
-	go publishConfig(devConfig)
-
-	if err := json.NewEncoder(conn).Encode(&r); err != nil {
-		log.Errorf("listenConfig(): Encode JSON: %s", err)
-	}
-}
-
-func publishConfig(d *FridgeConfig) {
-	for _, v := range d.SubsPool {
-		v <- struct{}{}
-	}
-}
-
-func (fc *FridgeConfig) update(nfc entities.FridgeConfig) {
-	fc.TurnedOn = nfc.TurnedOn
-	fc.SendFreq = nfc.SendFreq
-	log.Warningln("SendFreq: ", fc.SendFreq)
-	fc.CollectFreq = nfc.CollectFreq
-	log.Warningln("CollectFreq: ", fc.CollectFreq)
-
-	switch fc.TurnedOn {
-	case false:
-		log.Warningln("ON PAUSE")
-	case true:
-		log.Warningln("WORKING")
-	}
-}
-
-func (fc *FridgeConfig) RequestFridgeConfig(connType string, host string, port string, c *entities.RoutinesController, args []string) {
-	conn, err := net.Dial(connType, host+":"+port)
+func (c *Configuration) RequestConfig(connType string, s *entities.Server, ctrl *entities.RoutinesController, args []string) {
+	conn, err := net.Dial(connType, s.Host+":"+s.Port)
 	for err != nil {
-		log.Error("Can't connect to the server: " + host + ":" + port)
-		panic("No center found!")
+		log.Error("RequestConfig: can't connect to the centerms: " + s.Host+":"+s.Port)
+		panic("centerms hasn't been found")
 	}
 
 	req := entities.FridgeRequest{
@@ -140,33 +37,110 @@ func (fc *FridgeConfig) RequestFridgeConfig(connType string, host string, port s
 			Name: args[1],
 			MAC:  args[2]},
 	}
-
 	if err := json.NewEncoder(conn).Encode(req); err != nil {
 		log.Errorf("askConfig(): Encode JSON: %s", err)
 	}
 
-	log.Println("Request:", req)
+	log.Info("Request:", req)
 
-	var rfc entities.FridgeConfig
-	if err := json.NewDecoder(conn).Decode(&rfc); err != nil {
+	var fc *entities.FridgeConfig
+	if err := json.NewDecoder(conn).Decode(fc); err != nil {
 		log.Errorf("askConfig(): Decode JSON: %s", err)
 	}
 
-	if err != nil && rfc.IsEmpty() {
-		panic("Connection has been closed by center")
+	if err != nil && fc.IsEmpty() {
+		panic("connection has been closed by centerms")
 	}
 
-	fc.update(rfc)
+	c.updateConfig(fc)
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("RequestConfig(): listenConfig() has failed")
+				ctrl.Terminate()
+			}
+		}()
 		for {
-			defer func() {
-				if r := recover(); r != nil {
-					c.Terminate()
-					log.Error("Initialization Failed")
-				}
-			}()
-			listenConfig(fc, conn)
+			c.listenConfig(conn)
 		}
 	}()
+}
+
+func (c *Configuration) updateConfig(nfc *entities.FridgeConfig) {
+	c.TurnedOn = nfc.TurnedOn
+	c.SendFreq = nfc.SendFreq
+	c.CollectFreq = nfc.CollectFreq
+	if c.TurnedOn {
+		log.Info("fridgems is turned on")
+	} else {
+		log.Info("fridgems is turned off")
+	}
+}
+
+func (c *Configuration) listenConfig(conn net.Conn) {
+	var fc *entities.FridgeConfig
+	if err := json.NewDecoder(conn).Decode(fc); err != nil {
+		panic("No config found!")
+	}
+
+	c.updateConfig(fc)
+	go c.publishConfig()
+
+	r := entities.Response{
+		Descr: "FridgeConfig has been received",
+	}
+	if err := json.NewEncoder(conn).Encode(&r); err != nil {
+		log.Errorf("listenConfig(): Encode JSON: %s", err)
+	}
+}
+
+func (c *Configuration) publishConfig() {
+	for _, v := range c.SubsPool {
+		v <- struct{}{}
+	}
+}
+
+func (c *Configuration) Subscribe(key string, value chan struct{}) {
+	c.Mutex.Lock()
+	c.SubsPool[key] = value
+	c.Mutex.Unlock()
+}
+func (c *Configuration) Unsubscribe(key string) {
+	c.Mutex.Lock()
+	delete(c.SubsPool, key)
+	c.Mutex.Unlock()
+}
+
+func (c *Configuration) GetTurnedOn() bool {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	return c.TurnedOn
+}
+func (c *Configuration) SetTurnedOn(b bool) {
+	c.Mutex.Lock()
+	c.TurnedOn = b
+	c.Mutex.Unlock()
+}
+
+func (c *Configuration) GetCollectFreq() int64 {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	return c.CollectFreq
+}
+func (c *Configuration) SetCollectFreq(cf int64) {
+	c.Mutex.Lock()
+	c.CollectFreq = cf
+	c.Mutex.Unlock()
+}
+
+func (c *Configuration) GetSendFreq() int64 {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	return c.SendFreq
+}
+func (c *Configuration) SetSendFreq(sf int64) {
+	c.Mutex.Lock()
+	c.SendFreq = sf
+	c.Mutex.Unlock()
 }

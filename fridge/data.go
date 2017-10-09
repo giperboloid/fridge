@@ -5,54 +5,55 @@ import (
 	"os"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/giperboloid/devicems/entities"
-	"google.golang.org/grpc"
-	"github.com/giperboloid/devicems/pb"
 	"context"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/giperboloid/fridgems/entities"
+	"github.com/giperboloid/fridgems/pb"
+	"google.golang.org/grpc"
 )
 
-//RunDataCollector setups DataCollector
-func RunDataCollector(fc *FridgeConfig, cBot <-chan entities.FridgeGenerData,
+//DataCollector setups dataCollector
+func DataCollector(с *Configuration, cBot <-chan entities.FridgeGenerData,
 	cTop <-chan entities.FridgeGenerData, ReqChan chan entities.FridgeRequest, c *entities.RoutinesController) {
 
-	duration := fc.GetSendFreq()
+	duration := с.GetSendFreq()
 	stopInner := make(chan struct{})
 	ticker := time.NewTicker(time.Duration(duration) * time.Millisecond)
 
 	configChanged := make(chan struct{})
-	fc.AddSubscriber("DataCollector", configChanged)
+	с.Subscribe("dataCollector", configChanged)
 
-	if fc.GetTurnedOn() {
-		go DataCollector(ticker, cBot, cTop, ReqChan, stopInner)
+	if с.GetTurnedOn() {
+		go dataCollector(ticker, cBot, cTop, ReqChan, stopInner)
 	}
 
 	for {
 		select {
 		case <-configChanged:
-			state := fc.GetTurnedOn()
+			state := с.GetTurnedOn()
 			switch state {
 			case true:
 				select {
 				case <-stopInner:
 					stopInner = make(chan struct{})
-					ticker = time.NewTicker(time.Duration(fc.GetSendFreq()) * time.Millisecond)
-					go DataCollector(ticker, cBot, cTop, ReqChan, stopInner)
-					log.Println("DataCollector() has been started")
+					ticker = time.NewTicker(time.Duration(с.GetSendFreq()) * time.Millisecond)
+					go dataCollector(ticker, cBot, cTop, ReqChan, stopInner)
+					log.Println("dataCollector() has been started")
 				default:
 					close(stopInner)
 					stopInner = make(chan struct{})
-					ticker = time.NewTicker(time.Duration(fc.GetSendFreq()) * time.Millisecond)
-					go DataCollector(ticker, cBot, cTop, ReqChan, stopInner)
-					log.Println("DataCollector() has been started")
+					ticker = time.NewTicker(time.Duration(с.GetSendFreq()) * time.Millisecond)
+					go dataCollector(ticker, cBot, cTop, ReqChan, stopInner)
+					log.Println("dataCollector() has been started")
 				}
 			case false:
 				select {
 				case <-stopInner:
-					ticker = time.NewTicker(time.Duration(fc.GetSendFreq()) * time.Millisecond)
+					ticker = time.NewTicker(time.Duration(с.GetSendFreq()) * time.Millisecond)
 				default:
 					close(stopInner)
-					log.Println("DataCollector() has been killed")
+					log.Println("dataCollector() has been killed")
 				}
 			}
 		case <-c.StopChan:
@@ -62,9 +63,9 @@ func RunDataCollector(fc *FridgeConfig, cBot <-chan entities.FridgeGenerData,
 	}
 }
 
-//DataCollector gathers data from DataGenerator
+//dataCollector gathers data from dataGenerator
 //and sends completed request's structures to the ReqChan channel
-func DataCollector(t *time.Ticker, cBot <-chan entities.FridgeGenerData, cTop <-chan entities.FridgeGenerData,
+func dataCollector(t *time.Ticker, cBot <-chan entities.FridgeGenerData, cTop <-chan entities.FridgeGenerData,
 	ReqChan chan entities.FridgeRequest, stopInner chan struct{}) {
 	var mTop = make(map[int64]float32)
 	var mBot = make(map[int64]float32)
@@ -72,7 +73,7 @@ func DataCollector(t *time.Ticker, cBot <-chan entities.FridgeGenerData, cTop <-
 	for {
 		select {
 		case <-stopInner:
-			log.Println("DataCollector(): wg.Done()")
+			log.Println("dataCollector(): wg.Done()")
 			return
 		case tv := <-cTop:
 			mTop[tv.Time] = tv.Data
@@ -95,7 +96,7 @@ func constructReq(mTop map[int64]float32, mBot map[int64]float32) entities.Fridg
 	fd.TempCam1 = mTop
 
 	fr := entities.FridgeRequest{
-		Action: "update",
+		Action: "updateConfig",
 		Time:   time.Now().UnixNano(),
 		Meta: entities.DevMeta{
 			Type: args[0],
@@ -106,59 +107,59 @@ func constructReq(mTop map[int64]float32, mBot map[int64]float32) entities.Fridg
 	return fr
 }
 
-//RunDataGenerator setups DataGenerator
-func RunDataGenerator(config *FridgeConfig, cBot chan<- entities.FridgeGenerData,
-	cTop chan<- entities.FridgeGenerData, c *entities.RoutinesController) {
+//DataGenerator setups dataGenerator
+func DataGenerator(c *Configuration, cBot chan<- entities.FridgeGenerData,
+	cTop chan<- entities.FridgeGenerData, ctrl *entities.RoutinesController) {
 
-	duration := config.GetCollectFreq()
+	duration := c.GetCollectFreq()
 	ticker := time.NewTicker(time.Duration(duration) * time.Millisecond)
 	stopInner := make(chan struct{})
 
 	configChanged := make(chan struct{})
-	config.AddSubscriber("DataGenerator", configChanged)
+	c.Subscribe("dataGenerator", configChanged)
 
-	if config.GetTurnedOn() {
-		go DataGenerator(ticker, cBot, cTop, stopInner)
+	if c.GetTurnedOn() {
+		go dataGenerator(ticker, cBot, cTop, stopInner)
 	}
 
 	for {
 		select {
 		case <-configChanged:
-			state := config.GetTurnedOn()
+			state := c.GetTurnedOn()
 			switch state {
 			case true:
 				select {
 				case <-stopInner:
 					stopInner = make(chan struct{})
-					ticker = time.NewTicker(time.Duration(config.GetCollectFreq()) * time.Millisecond)
-					go DataGenerator(ticker, cBot, cTop, stopInner)
-					log.Println("DataGenerator() has been started")
+					ticker = time.NewTicker(time.Duration(c.GetCollectFreq()) * time.Millisecond)
+					go dataGenerator(ticker, cBot, cTop, stopInner)
+					log.Println("dataGenerator() has been started")
 				default:
 					close(stopInner)
 					ticker.Stop()
 					stopInner = make(chan struct{})
-					ticker = time.NewTicker(time.Duration(config.GetCollectFreq()) * time.Millisecond)
-					go DataGenerator(ticker, cBot, cTop, stopInner)
-					log.Println("DataGenerator() has been started")
+					ticker = time.NewTicker(time.Duration(c.GetCollectFreq()) * time.Millisecond)
+					go dataGenerator(ticker, cBot, cTop, stopInner)
+					log.Println("dataGenerator() has been started")
 				}
 			case false:
 				select {
 				case <-stopInner:
-					ticker = time.NewTicker(time.Duration(config.GetCollectFreq()) * time.Millisecond)
+					ticker = time.NewTicker(time.Duration(c.GetCollectFreq()) * time.Millisecond)
 				default:
 					close(stopInner)
-					log.Println("DataGenerator() has been killed")
+					log.Println("dataGenerator() has been killed")
 				}
 			}
-		case <-c.StopChan:
+		case <-ctrl.StopChan:
 			log.Error("Data Generator Failed")
 			return
 		}
 	}
 }
 
-//DataGenerator generates pseudo-random data that represents devices's behavior
-func DataGenerator(t *time.Ticker, cBot chan<- entities.FridgeGenerData, cTop chan<- entities.FridgeGenerData,
+//dataGenerator generates pseudo-random data that represents devices's behavior
+func dataGenerator(t *time.Ticker, cBot chan<- entities.FridgeGenerData, cTop chan<- entities.FridgeGenerData,
 	stopInner chan struct{}) {
 	for {
 		select {
@@ -166,7 +167,7 @@ func DataGenerator(t *time.Ticker, cBot chan<- entities.FridgeGenerData, cTop ch
 			cTop <- entities.FridgeGenerData{Time: makeTimestamp(), Data: rand.Float32() * 10}
 			cBot <- entities.FridgeGenerData{Time: makeTimestamp(), Data: (rand.Float32() * 10) - 8}
 		case <-stopInner:
-			log.Println("DataGenerator(): wg.Done()")
+			log.Println("dataGenerator(): wg.Done()")
 			return
 		}
 	}
@@ -176,8 +177,8 @@ func makeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-//DataTransfer func sends request as JSON to the centre
-func DataTransfer(s entities.Server, reqChan chan entities.FridgeRequest, c *entities.RoutinesController) {
+//DataSender func sends request as JSON to the centre
+func DataSender(s entities.Server, reqChan chan entities.FridgeRequest, c *entities.RoutinesController) {
 	transferConn := entities.TransferConn{
 		Server: entities.Server{
 			Host: s.Host,
@@ -238,11 +239,11 @@ func Send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
 
 	pbfr := &pb.FridgeDataRequest{
 		Action: fr.Action,
-		Time: fr.Time,
+		Time:   fr.Time,
 		Meta: &pb.DevMeta{
 			Type: fr.Meta.Type,
 			Name: fr.Meta.Name,
-			Mac: fr.Meta.MAC,
+			Mac:  fr.Meta.MAC,
 		},
 		Data: &pb.FridgeData{
 			TempCam1: fr.Data.TempCam1,
@@ -251,8 +252,6 @@ func Send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
 	}
 
 	setFridgeData(client, pbfr)
-
-	log.Infoln("Data was sent. Response from center: ")
 }
 
 func setFridgeData(c pb.FridgeServiceClient, req *pb.FridgeDataRequest) {
@@ -260,7 +259,7 @@ func setFridgeData(c pb.FridgeServiceClient, req *pb.FridgeDataRequest) {
 	if err != nil {
 		log.Fatalf("Could not create FridgeData: %v", err)
 	}
-	if resp.Status {
-		log.Printf("Data has been received with status: %s", resp.Status)
+	if resp.Status == "" {
+		log.Printf("center has received data with status: %s", resp.Status)
 	}
 }

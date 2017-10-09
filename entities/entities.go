@@ -7,11 +7,6 @@ type Server struct {
 	Port string
 }
 
-type ConfigConn struct {
-	Server   Server
-	ConnType string
-}
-
 type TransferConn struct {
 	Server   Server
 	ConnType string
@@ -46,14 +41,12 @@ type FridgeConfig struct {
 	MAC         string `json:"mac"`
 }
 
-func (c FridgeConfig) IsEmpty() bool {
-	if c.CollectFreq == 0 && c.SendFreq == 0 && c.MAC == "" && c.TurnedOn == false {
+func (fc *FridgeConfig) IsEmpty() bool {
+	if fc.CollectFreq == 0 && fc.SendFreq == 0 && fc.MAC == "" && fc.TurnedOn == false {
 		return true
 	}
 	return false
 }
-
-
 
 type FridgeGenerData struct {
 	Time int64

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/giperboloid/devicems/entities"
+	"github.com/giperboloid/fridgems/entities"
 	"github.com/smartystreets/goconvey/convey"
 )
 
@@ -30,7 +30,7 @@ func TestDataCollector(t *testing.T) {
 	botMap[0] = 10.01
 
 	exReq := entities.FridgeRequest{
-		Action: "update",
+		Action: "updateConfig",
 		Meta: entities.DevMeta{
 			Type: os.Args[1],
 			Name: os.Args[2],
@@ -40,9 +40,9 @@ func TestDataCollector(t *testing.T) {
 			TempCam2: botMap},
 	}
 
-	convey.Convey("DataGenerator should produce structs with data", t, func() {
+	convey.Convey("dataGenerator should produce structs with data", t, func() {
 
-		go DataCollector(ticker, bot, top, reqChan, stopInner)
+		go dataCollector(ticker, bot, top, reqChan, stopInner)
 		top <- entities.FridgeGenerData{Data: 1.01}
 		bot <- entities.FridgeGenerData{Data: 10.01}
 
@@ -71,7 +71,7 @@ func TestConstructReq(t *testing.T) {
 	top[3] = 30.01
 
 	exReq = entities.FridgeRequest{
-		Action: "update",
+		Action: "updateConfig",
 		Meta: entities.DevMeta{
 			Type: os.Args[1],
 			Name: os.Args[2],
@@ -96,11 +96,11 @@ func TestDataGenerator(t *testing.T) {
 	bot := make(chan entities.FridgeGenerData)
 	stopInner := make(chan struct{})
 
-	convey.Convey("DataGenerator should produce structs with data", t, func() {
+	convey.Convey("dataGenerator should produce structs with data", t, func() {
 		var fromTop, fromBot entities.FridgeGenerData
 		var okTop, okBot bool
 
-		go DataGenerator(ticker, bot, top, stopInner)
+		go dataGenerator(ticker, bot, top, stopInner)
 		fromTop, okTop = <-top
 		fromBot, okBot = <-bot
 
@@ -144,7 +144,7 @@ func TestDataTransfer(t *testing.T) {
 
 	var req entities.FridgeRequest
 	exReq := entities.FridgeRequest{
-		Action: "update",
+		Action: "updateConfig",
 		Meta: entities.DevMeta{
 			Type: os.Args[1],
 			Name: os.Args[2],
@@ -156,11 +156,11 @@ func TestDataTransfer(t *testing.T) {
 
 	ch := make(chan entities.FridgeRequest)
 
-	convey.Convey("DataTransfer should receive req from chan and transfer it to the server", t, func() {
+	convey.Convey("DataSender should receive req from chan and transfer it to the server", t, func() {
 		ln, err := net.Listen(connTypeOut, hostOut+":"+portOut)
 		if err != nil {
 			//t.Fail()
-			panic("DataTransfer() Listen: error")
+			panic("DataSender() Listen: error")
 		}
 
 		control := &entities.RoutinesController{StopChan:make(chan struct{})}
@@ -181,7 +181,7 @@ func TestDataTransfer(t *testing.T) {
 				log.Error(r)
 			}
 		}()
-		go DataTransfer(entities.Server{Host: hostOut}, ch, control)
+		go DataSender(entities.Server{Host: hostOut}, ch, control)
 
 		ch <- exReq
 
@@ -221,7 +221,7 @@ func TestSend(t *testing.T) {
 	defer server.Close()
 
 	exReq := entities.FridgeRequest{
-		Action: "update",
+		Action: "updateConfig",
 		Meta: entities.DevMeta{
 			Type: os.Args[1],
 			Name: os.Args[2],
