@@ -108,7 +108,7 @@ func constructReq(mTop map[int64]float32, mBot map[int64]float32) entities.Fridg
 		Action: "update",
 		Time:   time.Now().UnixNano(),
 		Meta: entities.DevMeta{
-			Type: devType,
+			Type: "fridge",
 			Name: args[0],
 			MAC:  args[1],
 		},

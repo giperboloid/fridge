@@ -9,10 +9,6 @@ import (
 	"github.com/giperboloid/fridgems/entities"
 )
 
-const (
-	devType = "fridge"
-)
-
 type Configuration struct {
 	sync.Mutex
 	TurnedOn    bool
@@ -27,7 +23,7 @@ func NewConfiguration() *Configuration {
 	return c
 }
 
-func (c *Configuration) RequestConfig(connType string, s *entities.Server, ctrl *entities.RoutinesController, args []string) {
+func (c *Configuration) RequestConfig(devType, devName, devMAC, connType string, s *entities.Server, ctrl *entities.RoutinesController) {
 	conn, err := net.Dial(connType, s.Host+":"+s.Port)
 	for err != nil {
 		log.Error("RequestConfig(): can't connect to the centerms: " + s.Host + ":" + s.Port)
@@ -38,8 +34,8 @@ func (c *Configuration) RequestConfig(connType string, s *entities.Server, ctrl 
 		Action: "config",
 		Meta: entities.DevMeta{
 			Type: devType,
-			Name: args[0],
-			MAC:  args[1],
+			Name: devName,
+			MAC:  devMAC,
 		},
 	}
 
@@ -47,17 +43,13 @@ func (c *Configuration) RequestConfig(connType string, s *entities.Server, ctrl 
 		log.Errorf("askConfig(): Encode JSON: %s", err)
 	}
 
+	log.Info("Before config decoding")
 	var rfc entities.FridgeConfig
 	if err := json.NewDecoder(conn).Decode(&rfc); err != nil {
-		log.Errorf("askConfig(): Decode JSON: %s", err)
+		log.Errorf("RequestConfig(): Decode() has failed: ", err)
 	}
 
 	log.Infof("current config: %+v", rfc)
-
-	if err != nil && rfc.IsEmpty() {
-		panic("connection has been closed by the centerms")
-	}
-
 	c.update(&rfc)
 
 	go func() {
@@ -67,8 +59,9 @@ func (c *Configuration) RequestConfig(connType string, s *entities.Server, ctrl 
 					ctrl.Terminate()
 				}
 			}()
-			c.listen(conn)
+			c.listenConfig(conn)
 		}
+		conn.Close()
 	}()
 }
 
@@ -83,7 +76,7 @@ func (c *Configuration) update(nfc *entities.FridgeConfig) {
 	}
 }
 
-func (c *Configuration) listen(conn net.Conn) {
+func (c *Configuration) listenConfig(conn net.Conn) {
 	var fc *entities.FridgeConfig
 	if err := json.NewDecoder(conn).Decode(&fc); err != nil {
 		panic("centerms hasn't been found")
@@ -96,20 +89,16 @@ func (c *Configuration) listen(conn net.Conn) {
 		Descr: "FridgeConfig has been received",
 	}
 
-	c.update(fc)
-	go c.publish()
-
 	if err := json.NewEncoder(conn).Encode(&r); err != nil {
-		log.Errorf("listen(): Encode JSON: %s", err)
+		log.Errorf("listenConfig(): Encode JSON: %s", err)
 	}
 }
 
 func (c *Configuration) publish() {
-		for _, v := range c.SubsPool {
-			v <- struct{}{}
-		}
+	for _, v := range c.SubsPool {
+		v <- struct{}{}
 	}
-
+}
 
 func (c *Configuration) Subscribe(key string, value chan struct{}) {
 	c.Mutex.Lock()

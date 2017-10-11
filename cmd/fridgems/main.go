@@ -7,10 +7,9 @@ import (
 )
 
 func main() {
-	var (
-		fridgeParams = GetFridgeNameAndMAC()
-		ctrl         = &entities.RoutinesController{StopChan: make(chan struct{})}
-	)
+	log.Infof("fridge: name:[%s] MAC:[%s]", devName, devMAC)
+
+	ctrl := &entities.RoutinesController{StopChan: make(chan struct{})}
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -19,8 +18,6 @@ func main() {
 		}
 	}()
 
-	log.Infof("fridge: name:[%s] MAC:[%s]", fridgeParams[0], fridgeParams[1])
-
 	collectFridgeData := entities.CollectFridgeData{
 		CTop:    make(chan entities.FridgeGenerData, 100),
 		CBot:    make(chan entities.FridgeGenerData, 100),
@@ -28,7 +25,7 @@ func main() {
 	}
 
 	c := fridge.NewConfiguration()
-	c.RequestConfig(connType, &centerms, ctrl, fridgeParams)
+	c.RequestConfig(devType, devName, devMAC, connType, &centerms, ctrl)
 
 	go fridge.DataGenerator(c, collectFridgeData.CBot, collectFridgeData.CTop, ctrl)
 	go fridge.DataCollector(c, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, ctrl)
