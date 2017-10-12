@@ -25,7 +25,7 @@ func main() {
 	}
 
 	c := fridge.NewConfiguration()
-	c.RequestConfig(devType, devName, devMAC, connType, &centerms, ctrl)
+	c.SetInitConfig(devType, devName, devMAC, connType, &centerms, ctrl)
 
 	go fridge.DataGenerator(c, collectFridgeData.CBot, collectFridgeData.CTop, ctrl)
 	go fridge.DataCollector(c, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, ctrl)

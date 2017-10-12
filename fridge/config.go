@@ -7,6 +7,9 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
+	"github.com/giperboloid/fridgems/pb"
+	"time"
+	"golang.org/x/net/context"
 )
 
 type Configuration struct {
@@ -23,46 +26,26 @@ func NewConfiguration() *Configuration {
 	return c
 }
 
-func (c *Configuration) RequestConfig(devType, devName, devMAC, connType string, s *entities.Server, ctrl *entities.RoutinesController) {
-	conn, err := net.Dial(connType, s.Host+":"+s.Port)
-	for err != nil {
-		log.Error("RequestConfig(): can't connect to the centerms: " + s.Host + ":" + s.Port)
-		panic("centerms hasn't been found")
-	}
-
-	req := entities.FridgeRequest{
-		Action: "config",
-		Meta: entities.DevMeta{
+func (c *Configuration) SetInitConfig(devType, devName, devMAC, connType string, s *entities.Server, ctrl *entities.RoutinesController) {
+	pbic := &pb.SetInitConfigRequest{
+		Time:   time.Now().UnixNano(),
+		Meta: &pb.DevMeta{
 			Type: devType,
 			Name: devName,
-			MAC:  devMAC,
+			Mac:  devMAC,
 		},
 	}
 
-	if err := json.NewEncoder(conn).Encode(req); err != nil {
-		log.Errorf("askConfig(): Encode JSON: %s", err)
+	conn := dial(*s)
+	client := pb.NewDevServiceClient(conn)
+
+	resp, err := client.SetInitConfig(context.Background(), pbic)
+	if err != nil {
+		log.Error("sendInitConfigRequest(): SaveFridgeData() has failed", err)
 	}
+	log.Infof("centerms has received data with status: %s", resp.Status)
 
-	log.Info("Before config decoding")
-	var rfc entities.FridgeConfig
-	if err := json.NewDecoder(conn).Decode(&rfc); err != nil {
-		log.Errorf("RequestConfig(): Decode() has failed: ", err)
-	}
-
-	log.Infof("current config: %+v", rfc)
-	c.update(&rfc)
-
-	go func() {
-		for {
-			defer func() {
-				if r := recover(); r != nil {
-					ctrl.Terminate()
-				}
-			}()
-			c.listenConfig(conn)
-		}
-		conn.Close()
-	}()
+	c.update()
 }
 
 func (c *Configuration) update(nfc *entities.FridgeConfig) {

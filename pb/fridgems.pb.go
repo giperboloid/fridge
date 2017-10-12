@@ -8,12 +8,14 @@ It is generated from these files:
 	fridgems.proto
 
 It has these top-level messages:
-	FridgeConfigRequest
-	FridgeConfigResponse
 	DevMeta
 	FridgeData
 	SaveDevDataRequest
 	SaveDevDataResponse
+	SetInitConfigRequest
+	SetInitConfigResponse
+	GetDevConfigRequest
+	GetDevConfigResponse
 */
 package pb
 
@@ -37,86 +39,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type FridgeConfigRequest struct {
-	TurnedOn    bool   `protobuf:"varint,1,opt,name=turnedOn" json:"turnedOn,omitempty"`
-	CollectFreq int64  `protobuf:"varint,2,opt,name=collectFreq" json:"collectFreq,omitempty"`
-	SendFreq    int64  `protobuf:"varint,3,opt,name=sendFreq" json:"sendFreq,omitempty"`
-	Mac         string `protobuf:"bytes,4,opt,name=mac" json:"mac,omitempty"`
-}
-
-func (m *FridgeConfigRequest) Reset()                    { *m = FridgeConfigRequest{} }
-func (m *FridgeConfigRequest) String() string            { return proto.CompactTextString(m) }
-func (*FridgeConfigRequest) ProtoMessage()               {}
-func (*FridgeConfigRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
-
-func (m *FridgeConfigRequest) GetTurnedOn() bool {
-	if m != nil {
-		return m.TurnedOn
-	}
-	return false
-}
-
-func (m *FridgeConfigRequest) GetCollectFreq() int64 {
-	if m != nil {
-		return m.CollectFreq
-	}
-	return 0
-}
-
-func (m *FridgeConfigRequest) GetSendFreq() int64 {
-	if m != nil {
-		return m.SendFreq
-	}
-	return 0
-}
-
-func (m *FridgeConfigRequest) GetMac() string {
-	if m != nil {
-		return m.Mac
-	}
-	return ""
-}
-
-type FridgeConfigResponse struct {
-	TurnedOn    bool   `protobuf:"varint,1,opt,name=turnedOn" json:"turnedOn,omitempty"`
-	CollectFreq int64  `protobuf:"varint,2,opt,name=collectFreq" json:"collectFreq,omitempty"`
-	SendFreq    int64  `protobuf:"varint,3,opt,name=sendFreq" json:"sendFreq,omitempty"`
-	Mac         string `protobuf:"bytes,4,opt,name=mac" json:"mac,omitempty"`
-}
-
-func (m *FridgeConfigResponse) Reset()                    { *m = FridgeConfigResponse{} }
-func (m *FridgeConfigResponse) String() string            { return proto.CompactTextString(m) }
-func (*FridgeConfigResponse) ProtoMessage()               {}
-func (*FridgeConfigResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *FridgeConfigResponse) GetTurnedOn() bool {
-	if m != nil {
-		return m.TurnedOn
-	}
-	return false
-}
-
-func (m *FridgeConfigResponse) GetCollectFreq() int64 {
-	if m != nil {
-		return m.CollectFreq
-	}
-	return 0
-}
-
-func (m *FridgeConfigResponse) GetSendFreq() int64 {
-	if m != nil {
-		return m.SendFreq
-	}
-	return 0
-}
-
-func (m *FridgeConfigResponse) GetMac() string {
-	if m != nil {
-		return m.Mac
-	}
-	return ""
-}
-
 type DevMeta struct {
 	Type string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
 	Name string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
@@ -126,7 +48,7 @@ type DevMeta struct {
 func (m *DevMeta) Reset()                    { *m = DevMeta{} }
 func (m *DevMeta) String() string            { return proto.CompactTextString(m) }
 func (*DevMeta) ProtoMessage()               {}
-func (*DevMeta) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*DevMeta) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 func (m *DevMeta) GetType() string {
 	if m != nil {
@@ -157,7 +79,7 @@ type FridgeData struct {
 func (m *FridgeData) Reset()                    { *m = FridgeData{} }
 func (m *FridgeData) String() string            { return proto.CompactTextString(m) }
 func (*FridgeData) ProtoMessage()               {}
-func (*FridgeData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*FridgeData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *FridgeData) GetTempCam1() map[int64]float32 {
 	if m != nil {
@@ -183,7 +105,7 @@ type SaveDevDataRequest struct {
 func (m *SaveDevDataRequest) Reset()                    { *m = SaveDevDataRequest{} }
 func (m *SaveDevDataRequest) String() string            { return proto.CompactTextString(m) }
 func (*SaveDevDataRequest) ProtoMessage()               {}
-func (*SaveDevDataRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*SaveDevDataRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 func (m *SaveDevDataRequest) GetAction() string {
 	if m != nil {
@@ -220,7 +142,7 @@ type SaveDevDataResponse struct {
 func (m *SaveDevDataResponse) Reset()                    { *m = SaveDevDataResponse{} }
 func (m *SaveDevDataResponse) String() string            { return proto.CompactTextString(m) }
 func (*SaveDevDataResponse) ProtoMessage()               {}
-func (*SaveDevDataResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*SaveDevDataResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *SaveDevDataResponse) GetStatus() string {
 	if m != nil {
@@ -229,13 +151,111 @@ func (m *SaveDevDataResponse) GetStatus() string {
 	return ""
 }
 
+type SetInitConfigRequest struct {
+	Time int64    `protobuf:"varint,1,opt,name=time" json:"time,omitempty"`
+	Meta *DevMeta `protobuf:"bytes,2,opt,name=meta" json:"meta,omitempty"`
+}
+
+func (m *SetInitConfigRequest) Reset()                    { *m = SetInitConfigRequest{} }
+func (m *SetInitConfigRequest) String() string            { return proto.CompactTextString(m) }
+func (*SetInitConfigRequest) ProtoMessage()               {}
+func (*SetInitConfigRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *SetInitConfigRequest) GetTime() int64 {
+	if m != nil {
+		return m.Time
+	}
+	return 0
+}
+
+func (m *SetInitConfigRequest) GetMeta() *DevMeta {
+	if m != nil {
+		return m.Meta
+	}
+	return nil
+}
+
+type SetInitConfigResponse struct {
+	Status string `protobuf:"bytes,1,opt,name=status" json:"status,omitempty"`
+}
+
+func (m *SetInitConfigResponse) Reset()                    { *m = SetInitConfigResponse{} }
+func (m *SetInitConfigResponse) String() string            { return proto.CompactTextString(m) }
+func (*SetInitConfigResponse) ProtoMessage()               {}
+func (*SetInitConfigResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+
+func (m *SetInitConfigResponse) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+type GetDevConfigRequest struct {
+	TurnedOn    bool   `protobuf:"varint,1,opt,name=turnedOn" json:"turnedOn,omitempty"`
+	CollectFreq int64  `protobuf:"varint,2,opt,name=collectFreq" json:"collectFreq,omitempty"`
+	SendFreq    int64  `protobuf:"varint,3,opt,name=sendFreq" json:"sendFreq,omitempty"`
+	Mac         string `protobuf:"bytes,4,opt,name=mac" json:"mac,omitempty"`
+}
+
+func (m *GetDevConfigRequest) Reset()                    { *m = GetDevConfigRequest{} }
+func (m *GetDevConfigRequest) String() string            { return proto.CompactTextString(m) }
+func (*GetDevConfigRequest) ProtoMessage()               {}
+func (*GetDevConfigRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+
+func (m *GetDevConfigRequest) GetTurnedOn() bool {
+	if m != nil {
+		return m.TurnedOn
+	}
+	return false
+}
+
+func (m *GetDevConfigRequest) GetCollectFreq() int64 {
+	if m != nil {
+		return m.CollectFreq
+	}
+	return 0
+}
+
+func (m *GetDevConfigRequest) GetSendFreq() int64 {
+	if m != nil {
+		return m.SendFreq
+	}
+	return 0
+}
+
+func (m *GetDevConfigRequest) GetMac() string {
+	if m != nil {
+		return m.Mac
+	}
+	return ""
+}
+
+type GetDevConfigResponse struct {
+	Status string `protobuf:"bytes,1,opt,name=status" json:"status,omitempty"`
+}
+
+func (m *GetDevConfigResponse) Reset()                    { *m = GetDevConfigResponse{} }
+func (m *GetDevConfigResponse) String() string            { return proto.CompactTextString(m) }
+func (*GetDevConfigResponse) ProtoMessage()               {}
+func (*GetDevConfigResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *GetDevConfigResponse) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
 func init() {
-	proto.RegisterType((*FridgeConfigRequest)(nil), "pb.FridgeConfigRequest")
-	proto.RegisterType((*FridgeConfigResponse)(nil), "pb.FridgeConfigResponse")
 	proto.RegisterType((*DevMeta)(nil), "pb.DevMeta")
 	proto.RegisterType((*FridgeData)(nil), "pb.FridgeData")
 	proto.RegisterType((*SaveDevDataRequest)(nil), "pb.SaveDevDataRequest")
 	proto.RegisterType((*SaveDevDataResponse)(nil), "pb.SaveDevDataResponse")
+	proto.RegisterType((*SetInitConfigRequest)(nil), "pb.SetInitConfigRequest")
+	proto.RegisterType((*SetInitConfigResponse)(nil), "pb.SetInitConfigResponse")
+	proto.RegisterType((*GetDevConfigRequest)(nil), "pb.GetDevConfigRequest")
+	proto.RegisterType((*GetDevConfigResponse)(nil), "pb.GetDevConfigResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -250,6 +270,8 @@ const _ = grpc.SupportPackageIsVersion4
 
 type DevServiceClient interface {
 	SaveDevData(ctx context.Context, in *SaveDevDataRequest, opts ...grpc.CallOption) (*SaveDevDataResponse, error)
+	GetDevConfig(ctx context.Context, in *GetDevConfigRequest, opts ...grpc.CallOption) (*GetDevConfigResponse, error)
+	SetInitConfig(ctx context.Context, in *SetInitConfigRequest, opts ...grpc.CallOption) (*SetInitConfigResponse, error)
 }
 
 type devServiceClient struct {
@@ -269,10 +291,30 @@ func (c *devServiceClient) SaveDevData(ctx context.Context, in *SaveDevDataReque
 	return out, nil
 }
 
+func (c *devServiceClient) GetDevConfig(ctx context.Context, in *GetDevConfigRequest, opts ...grpc.CallOption) (*GetDevConfigResponse, error) {
+	out := new(GetDevConfigResponse)
+	err := grpc.Invoke(ctx, "/pb.DevService/GetDevConfig", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *devServiceClient) SetInitConfig(ctx context.Context, in *SetInitConfigRequest, opts ...grpc.CallOption) (*SetInitConfigResponse, error) {
+	out := new(SetInitConfigResponse)
+	err := grpc.Invoke(ctx, "/pb.DevService/SetInitConfig", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for DevService service
 
 type DevServiceServer interface {
 	SaveDevData(context.Context, *SaveDevDataRequest) (*SaveDevDataResponse, error)
+	GetDevConfig(context.Context, *GetDevConfigRequest) (*GetDevConfigResponse, error)
+	SetInitConfig(context.Context, *SetInitConfigRequest) (*SetInitConfigResponse, error)
 }
 
 func RegisterDevServiceServer(s *grpc.Server, srv DevServiceServer) {
@@ -297,6 +339,42 @@ func _DevService_SaveDevData_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DevService_GetDevConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDevConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DevServiceServer).GetDevConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DevService/GetDevConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DevServiceServer).GetDevConfig(ctx, req.(*GetDevConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DevService_SetInitConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetInitConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DevServiceServer).SetInitConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DevService/SetInitConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DevServiceServer).SetInitConfig(ctx, req.(*SetInitConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _DevService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.DevService",
 	HandlerType: (*DevServiceServer)(nil),
@@ -304,6 +382,14 @@ var _DevService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveDevData",
 			Handler:    _DevService_SaveDevData_Handler,
+		},
+		{
+			MethodName: "GetDevConfig",
+			Handler:    _DevService_GetDevConfig_Handler,
+		},
+		{
+			MethodName: "SetInitConfig",
+			Handler:    _DevService_SetInitConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -313,30 +399,34 @@ var _DevService_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("fridgems.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 399 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x53, 0x41, 0xab, 0x9b, 0x40,
-	0x10, 0xee, 0x6a, 0x9a, 0x26, 0x63, 0x5b, 0xca, 0x26, 0xa4, 0x12, 0x0a, 0x15, 0x4f, 0x5e, 0x2a,
-	0xd4, 0x5e, 0x42, 0x7b, 0x29, 0xc4, 0xe6, 0xd6, 0x16, 0x36, 0xfd, 0x03, 0x1b, 0x9d, 0x04, 0x69,
-	0x5c, 0x8d, 0xae, 0x42, 0x8e, 0xef, 0xfd, 0xec, 0x77, 0x7a, 0xec, 0xaa, 0x89, 0x12, 0x78, 0xf0,
-	0x2e, 0xef, 0xf6, 0xcd, 0xcc, 0x7e, 0xf3, 0xcd, 0x37, 0xbb, 0x0b, 0xef, 0xf7, 0x45, 0x12, 0x1f,
-	0x30, 0x2d, 0xfd, 0xbc, 0xc8, 0x64, 0x46, 0x8d, 0x7c, 0xe7, 0xde, 0x11, 0x98, 0x6d, 0x74, 0x7a,
-	0x9d, 0x89, 0x7d, 0x72, 0x60, 0x78, 0xaa, 0xb0, 0x94, 0x74, 0x09, 0x13, 0x59, 0x15, 0x02, 0xe3,
-	0xbf, 0xc2, 0x26, 0x0e, 0xf1, 0x26, 0xec, 0x12, 0x53, 0x07, 0xac, 0x28, 0x3b, 0x1e, 0x31, 0x92,
-	0x9b, 0x02, 0x4f, 0xb6, 0xe1, 0x10, 0xcf, 0x64, 0xfd, 0x94, 0x62, 0x97, 0x28, 0x62, 0x5d, 0x36,
-	0x75, 0xf9, 0x12, 0xd3, 0x0f, 0x60, 0xa6, 0x3c, 0xb2, 0x47, 0x0e, 0xf1, 0xa6, 0x4c, 0x41, 0xf7,
-	0x9e, 0xc0, 0x7c, 0x38, 0x43, 0x99, 0x67, 0xa2, 0xc4, 0x17, 0x1d, 0x62, 0x0d, 0x6f, 0x42, 0xac,
-	0x7f, 0xa3, 0xe4, 0x94, 0xc2, 0x48, 0x9e, 0x73, 0xd4, 0x92, 0x53, 0xa6, 0xb1, 0xca, 0x09, 0x9e,
-	0xa2, 0xd6, 0x99, 0x32, 0x8d, 0xbb, 0x26, 0xe6, 0xb5, 0xc9, 0x03, 0x01, 0x68, 0x9c, 0x84, 0x5c,
-	0x72, 0xba, 0x82, 0xc9, 0x3f, 0x4c, 0xf3, 0x35, 0x4f, 0xbf, 0xda, 0xc4, 0x31, 0x3d, 0x2b, 0xf8,
-	0xe4, 0xe7, 0x3b, 0xff, 0x7a, 0xc2, 0xef, 0xca, 0xbf, 0x84, 0x2c, 0xce, 0xec, 0x72, 0xba, 0xc7,
-	0x0c, 0x6c, 0xe3, 0x29, 0x66, 0x30, 0x64, 0x06, 0xcb, 0x1f, 0xf0, 0x6e, 0xd0, 0x54, 0x4d, 0xf9,
-	0x1f, 0xcf, 0xda, 0x8c, 0xc9, 0x14, 0xa4, 0x73, 0x78, 0x5d, 0xf3, 0x63, 0xd5, 0x98, 0x31, 0x58,
-	0x13, 0x7c, 0x37, 0x56, 0xa4, 0x47, 0x0e, 0x9e, 0x4d, 0x76, 0x2b, 0xa0, 0x5b, 0x5e, 0x63, 0x88,
-	0xb5, 0x1a, 0xb0, 0x7b, 0x48, 0x0b, 0x18, 0xf3, 0x48, 0x26, 0x99, 0x68, 0xd7, 0xd9, 0x46, 0x7a,
-	0xc9, 0x49, 0xbb, 0x50, 0x93, 0x69, 0x4c, 0x3f, 0xc3, 0x28, 0x45, 0xc9, 0xf5, 0x46, 0xad, 0xc0,
-	0x52, 0x8e, 0xdb, 0x3b, 0x61, 0xba, 0xa0, 0x48, 0x31, 0x97, 0x5c, 0xdf, 0xdb, 0x5b, 0xa6, 0xb1,
-	0xfb, 0x05, 0x66, 0x03, 0xd9, 0xf6, 0xed, 0x2c, 0x60, 0x5c, 0x4a, 0x2e, 0xab, 0xb2, 0xd3, 0x6d,
-	0xa2, 0xe0, 0x0f, 0x40, 0x88, 0xf5, 0x16, 0x8b, 0x3a, 0x89, 0x90, 0xfe, 0x04, 0xab, 0x47, 0xa6,
-	0x0b, 0x25, 0x79, 0x6b, 0x62, 0xf9, 0xf1, 0x26, 0xdf, 0xa8, 0xb8, 0xaf, 0x76, 0x63, 0xfd, 0x97,
-	0xbe, 0x3d, 0x06, 0x00, 0x00, 0xff, 0xff, 0x3f, 0xaa, 0x96, 0xf5, 0x5d, 0x03, 0x00, 0x00,
+	// 454 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x5d, 0x8f, 0x93, 0x40,
+	0x14, 0x75, 0xa0, 0xae, 0xf5, 0xb2, 0x6b, 0xcc, 0x6c, 0x5d, 0x91, 0x98, 0xd8, 0xf0, 0xd4, 0x17,
+	0x31, 0xe2, 0xcb, 0x46, 0x5f, 0x4c, 0x8a, 0x35, 0xc6, 0x18, 0x93, 0xa9, 0x7f, 0x60, 0x4a, 0xef,
+	0x6e, 0x88, 0x65, 0x60, 0xe1, 0x42, 0xd2, 0x47, 0x7f, 0xa7, 0xff, 0xc4, 0x27, 0x33, 0x03, 0x74,
+	0xc1, 0xe2, 0x1a, 0xdf, 0xee, 0xd7, 0xb9, 0xe7, 0xcc, 0xb9, 0x04, 0x78, 0x74, 0x55, 0x24, 0xdb,
+	0x6b, 0x4c, 0xcb, 0x20, 0x2f, 0x32, 0xca, 0xb8, 0x95, 0x6f, 0xfc, 0x25, 0x3c, 0x88, 0xb0, 0xfe,
+	0x82, 0x24, 0x39, 0x87, 0x09, 0xed, 0x73, 0x74, 0xd9, 0x9c, 0x2d, 0x1e, 0x0a, 0x13, 0xeb, 0x9a,
+	0x92, 0x29, 0xba, 0x56, 0x53, 0xd3, 0x31, 0x7f, 0x0c, 0x76, 0x2a, 0x63, 0xd7, 0x36, 0x25, 0x1d,
+	0xfa, 0xbf, 0x18, 0xc0, 0xca, 0xec, 0x8e, 0x24, 0x49, 0x7e, 0x09, 0xd3, 0x6f, 0x98, 0xe6, 0x4b,
+	0x99, 0xbe, 0x76, 0xd9, 0xdc, 0x5e, 0x38, 0xe1, 0xf3, 0x20, 0xdf, 0x04, 0xb7, 0x13, 0x41, 0xd7,
+	0xfe, 0xa0, 0xa8, 0xd8, 0x8b, 0xc3, 0x74, 0x0f, 0x19, 0xba, 0xd6, 0x5d, 0xc8, 0x70, 0x88, 0x0c,
+	0xbd, 0x77, 0x70, 0x36, 0x58, 0xaa, 0x55, 0x7e, 0xc7, 0xbd, 0x79, 0x8c, 0x2d, 0x74, 0xc8, 0x67,
+	0x70, 0xbf, 0x96, 0xbb, 0xaa, 0x79, 0x8c, 0x25, 0x9a, 0xe4, 0xad, 0x75, 0xc9, 0x7a, 0xe0, 0xf0,
+	0xbf, 0xc1, 0x7e, 0x05, 0x7c, 0x2d, 0x6b, 0x8c, 0xb0, 0xd6, 0x02, 0x05, 0xde, 0x54, 0x58, 0x12,
+	0xbf, 0x80, 0x13, 0x19, 0x53, 0x92, 0xa9, 0xd6, 0xce, 0x36, 0x33, 0x26, 0x27, 0xad, 0xa1, 0xb6,
+	0x30, 0x31, 0x7f, 0x01, 0x93, 0x14, 0x49, 0x1a, 0x47, 0x9d, 0xd0, 0xd1, 0x2f, 0x6e, 0x6f, 0x22,
+	0x4c, 0x43, 0x83, 0xb6, 0x92, 0xa4, 0x3b, 0x99, 0xb3, 0xc5, 0xa9, 0x30, 0xb1, 0xff, 0x12, 0xce,
+	0x07, 0xb4, 0x65, 0x9e, 0xa9, 0x12, 0x35, 0x6f, 0x49, 0x92, 0xaa, 0xb2, 0xe3, 0x6d, 0x32, 0xff,
+	0x33, 0xcc, 0xd6, 0x48, 0x9f, 0x54, 0x42, 0xcb, 0x4c, 0x5d, 0x25, 0xd7, 0x9d, 0xce, 0x4e, 0x0f,
+	0x1b, 0xd1, 0x63, 0xfd, 0x45, 0x8f, 0xff, 0x0a, 0x9e, 0xfc, 0xb1, 0xec, 0x1f, 0xec, 0x3f, 0x18,
+	0x9c, 0x7f, 0x44, 0x8a, 0xb0, 0x1e, 0xb2, 0x7b, 0x30, 0xa5, 0xaa, 0x50, 0xb8, 0xfd, 0xda, 0xf8,
+	0x34, 0x15, 0x87, 0x9c, 0xcf, 0xc1, 0x89, 0xb3, 0xdd, 0x0e, 0x63, 0x5a, 0x15, 0x78, 0xd3, 0x1a,
+	0xd6, 0x2f, 0x69, 0x74, 0x89, 0x6a, 0x6b, 0xda, 0xb6, 0x69, 0x1f, 0xf2, 0xee, 0x23, 0x9d, 0xdc,
+	0x7e, 0xa4, 0x01, 0xcc, 0x86, 0x12, 0xee, 0xd6, 0x1c, 0xfe, 0x64, 0x00, 0x11, 0xd6, 0x6b, 0x2c,
+	0xea, 0x24, 0x46, 0xfe, 0x1e, 0x9c, 0x9e, 0xdf, 0xfc, 0x42, 0xbb, 0x72, 0x7c, 0x77, 0xef, 0xe9,
+	0x51, 0xbd, 0xa1, 0xf1, 0xef, 0xf1, 0x25, 0x9c, 0xf6, 0x05, 0x70, 0x33, 0x3a, 0xe2, 0x8a, 0xe7,
+	0x1e, 0x37, 0x0e, 0x4b, 0x56, 0x70, 0x36, 0xb0, 0x9e, 0x9b, 0xe1, 0xb1, 0xd3, 0x7a, 0xcf, 0x46,
+	0x3a, 0xdd, 0x9e, 0xcd, 0x89, 0xf9, 0x05, 0xbc, 0xf9, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x0c, 0xe0,
+	0xde, 0x43, 0x14, 0x04, 0x00, 0x00,
 }

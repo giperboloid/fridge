@@ -215,7 +215,7 @@ func DataSender(s entities.Server, reqChan chan entities.FridgeRequest, c *entit
 		}
 	}()
 
-	conn := Dial(transferConn.Server)
+	conn := dial(transferConn.Server)
 	defer conn.Close()
 
 	for {
@@ -237,12 +237,12 @@ func DataSender(s entities.Server, reqChan chan entities.FridgeRequest, c *entit
 	}
 }
 
-func Dial(s entities.Server) *grpc.ClientConn {
+func dial(s entities.Server) *grpc.ClientConn {
 	var count int
 	conn, err := grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
 	for err != nil {
 		if count >= 5 {
-			panic("Dial(): can't connect to the centerms")
+			panic("dial(): can't connect to the centerms")
 		}
 		time.Sleep(time.Second)
 		conn, err = grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())

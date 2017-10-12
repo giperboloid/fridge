@@ -182,7 +182,7 @@ func TestInit(t *testing.T) {
 			if r := recover(); r != nil {
 				log.Error(r)
 			}} ()
-		testConfig.RequestConfig(connTypeConf, hostConf, portConf, control, maskOsArgs())
+		testConfig.SetInitConfig(connTypeConf, hostConf, portConf, control, maskOsArgs())
 
 		convey.So(testConfig.GetSendFreq(), convey.ShouldEqual, 5000)
 		convey.So(testConfig.GetCollectFreq(), convey.ShouldEqual, 1000)

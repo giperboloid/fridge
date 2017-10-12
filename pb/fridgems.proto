@@ -6,7 +6,8 @@ package pb;
 
 service DevService {
     rpc SaveDevData(SaveDevDataRequest) returns (SaveDevDataResponse) {}
-    rpc GetDevConfig(GetDevConfigRequest) returns (GetDevConfigResponse)
+    rpc GetDevConfig(GetDevConfigRequest) returns (GetDevConfigResponse) {}
+    rpc SetInitConfig(SetInitConfigRequest) returns (SetInitConfigResponse) {}
 }
 
 message DevMeta {
@@ -27,6 +28,15 @@ message SaveDevDataRequest {
     bytes data = 4;
 }
 message SaveDevDataResponse {
+    string status = 1;
+}
+
+message SetInitConfigRequest {
+    int64 time = 1;
+    DevMeta meta = 2;
+}
+
+message SetInitConfigResponse {
     string status = 1;
 }
 

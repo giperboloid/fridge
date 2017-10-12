@@ -203,7 +203,7 @@ func TestGetDial(t *testing.T) {
 
 	convey.Convey("tcp tcp should be established", t, func() {
 		ln, _ := net.Listen(connTypeConf, hostConf+":"+portConf)
-		conn := Dial(connTypeConf, hostConf, portConf)
+		conn := dial(connTypeConf, hostConf, portConf)
 		time.Sleep(time.Millisecond * 100)
 		defer ln.Close()
 		defer conn.Close()
