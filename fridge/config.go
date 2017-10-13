@@ -10,6 +10,8 @@ import (
 	"github.com/giperboloid/fridgems/pb"
 	"time"
 	"golang.org/x/net/context"
+	"encoding/binary"
+	"bytes"
 )
 
 type Configuration struct {
@@ -26,26 +28,39 @@ func NewConfiguration() *Configuration {
 	return c
 }
 
-func (c *Configuration) SetInitConfig(devType, devName, devMAC, connType string, s *entities.Server, ctrl *entities.RoutinesController) {
-	pbic := &pb.SetInitConfigRequest{
+func (c *Configuration) SetInitConfig(s entities.Server, m *entities.DevMeta, ctrl *entities.RoutinesController) {
+	pbic := &pb.SetDevInitConfigRequest{
 		Time:   time.Now().UnixNano(),
 		Meta: &pb.DevMeta{
-			Type: devType,
-			Name: devName,
-			Mac:  devMAC,
+			Type: m.Type,
+			Name: m.Name,
+			Mac:  m.MAC,
 		},
 	}
 
-	conn := dial(*s)
-	client := pb.NewDevServiceClient(conn)
+	conn := dial(s)
+	defer conn.Close()
 
-	resp, err := client.SetInitConfig(context.Background(), pbic)
+	client := pb.NewCenterServiceClient(conn)
+
+	r, err := client.SetDevInitConfig(context.Background(), pbic)
 	if err != nil {
-		log.Error("sendInitConfigRequest(): SaveFridgeData() has failed", err)
+		log.Error("SetInitConfig(): SetDevInitConfig() has failed: ", err)
+		panic("init config hasn't been received")
 	}
-	log.Infof("centerms has received data with status: %s", resp.Status)
 
-	c.update()
+	buf := &bytes.Buffer{}
+	if err := binary.Write(buf, binary.BigEndian, r.Config); err != nil {
+		panic(err)
+	}
+
+	var fc entities.FridgeConfig
+	if err := json.NewDecoder(buf).Decode(&fc); err != nil {
+		panic("init config decoding has failed")
+	}
+
+	log.Infof("init config: %+v", fc)
+	c.update(&fc)
 }
 
 func (c *Configuration) update(nfc *entities.FridgeConfig) {

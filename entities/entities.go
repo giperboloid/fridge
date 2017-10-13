@@ -24,7 +24,6 @@ type FridgeData struct {
 }
 
 type FridgeRequest struct {
-	Action string     `json:"action"`
 	Time   int64      `json:"time"`
 	Meta   DevMeta   `json:"meta"`
 	Data   FridgeData `json:"data"`
@@ -38,11 +37,10 @@ type FridgeConfig struct {
 	TurnedOn    bool   `json:"turnedOn"`
 	CollectFreq int64  `json:"collectFreq"`
 	SendFreq    int64  `json:"sendFreq"`
-	MAC         string `json:"mac"`
 }
 
 func (fc *FridgeConfig) IsEmpty() bool {
-	if fc.CollectFreq == 0 && fc.SendFreq == 0 && fc.MAC == "" && fc.TurnedOn == false {
+	if fc.CollectFreq == 0 && fc.SendFreq == 0 && fc.TurnedOn == false {
 		return true
 	}
 	return false

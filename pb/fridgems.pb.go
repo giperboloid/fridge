@@ -9,13 +9,12 @@ It is generated from these files:
 
 It has these top-level messages:
 	DevMeta
-	FridgeData
+	SetDevInitConfigRequest
+	SetDevInitConfigResponse
 	SaveDevDataRequest
 	SaveDevDataResponse
-	SetInitConfigRequest
-	SetInitConfigResponse
-	GetDevConfigRequest
-	GetDevConfigResponse
+	PatchDevConfigRequest
+	PatchDevConfigResponse
 */
 package pb
 
@@ -71,48 +70,56 @@ func (m *DevMeta) GetMac() string {
 	return ""
 }
 
-type FridgeData struct {
-	TempCam1 map[int64]float32 `protobuf:"bytes,1,rep,name=TempCam1" json:"TempCam1,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"fixed32,2,opt,name=value"`
-	TempCam2 map[int64]float32 `protobuf:"bytes,2,rep,name=TempCam2" json:"TempCam2,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"fixed32,2,opt,name=value"`
+type SetDevInitConfigRequest struct {
+	Time int64    `protobuf:"varint,1,opt,name=time" json:"time,omitempty"`
+	Meta *DevMeta `protobuf:"bytes,2,opt,name=meta" json:"meta,omitempty"`
 }
 
-func (m *FridgeData) Reset()                    { *m = FridgeData{} }
-func (m *FridgeData) String() string            { return proto.CompactTextString(m) }
-func (*FridgeData) ProtoMessage()               {}
-func (*FridgeData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *SetDevInitConfigRequest) Reset()                    { *m = SetDevInitConfigRequest{} }
+func (m *SetDevInitConfigRequest) String() string            { return proto.CompactTextString(m) }
+func (*SetDevInitConfigRequest) ProtoMessage()               {}
+func (*SetDevInitConfigRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-func (m *FridgeData) GetTempCam1() map[int64]float32 {
+func (m *SetDevInitConfigRequest) GetTime() int64 {
 	if m != nil {
-		return m.TempCam1
+		return m.Time
+	}
+	return 0
+}
+
+func (m *SetDevInitConfigRequest) GetMeta() *DevMeta {
+	if m != nil {
+		return m.Meta
 	}
 	return nil
 }
 
-func (m *FridgeData) GetTempCam2() map[int64]float32 {
+type SetDevInitConfigResponse struct {
+	Config []byte `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+}
+
+func (m *SetDevInitConfigResponse) Reset()                    { *m = SetDevInitConfigResponse{} }
+func (m *SetDevInitConfigResponse) String() string            { return proto.CompactTextString(m) }
+func (*SetDevInitConfigResponse) ProtoMessage()               {}
+func (*SetDevInitConfigResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *SetDevInitConfigResponse) GetConfig() []byte {
 	if m != nil {
-		return m.TempCam2
+		return m.Config
 	}
 	return nil
 }
 
 type SaveDevDataRequest struct {
-	Action string   `protobuf:"bytes,1,opt,name=action" json:"action,omitempty"`
-	Time   int64    `protobuf:"varint,2,opt,name=time" json:"time,omitempty"`
-	Meta   *DevMeta `protobuf:"bytes,3,opt,name=meta" json:"meta,omitempty"`
-	Data   []byte   `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
+	Time int64    `protobuf:"varint,1,opt,name=time" json:"time,omitempty"`
+	Meta *DevMeta `protobuf:"bytes,2,opt,name=meta" json:"meta,omitempty"`
+	Data []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 }
 
 func (m *SaveDevDataRequest) Reset()                    { *m = SaveDevDataRequest{} }
 func (m *SaveDevDataRequest) String() string            { return proto.CompactTextString(m) }
 func (*SaveDevDataRequest) ProtoMessage()               {}
-func (*SaveDevDataRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
-
-func (m *SaveDevDataRequest) GetAction() string {
-	if m != nil {
-		return m.Action
-	}
-	return ""
-}
+func (*SaveDevDataRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *SaveDevDataRequest) GetTime() int64 {
 	if m != nil {
@@ -142,7 +149,7 @@ type SaveDevDataResponse struct {
 func (m *SaveDevDataResponse) Reset()                    { *m = SaveDevDataResponse{} }
 func (m *SaveDevDataResponse) String() string            { return proto.CompactTextString(m) }
 func (*SaveDevDataResponse) ProtoMessage()               {}
-func (*SaveDevDataResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*SaveDevDataResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *SaveDevDataResponse) GetStatus() string {
 	if m != nil {
@@ -151,96 +158,32 @@ func (m *SaveDevDataResponse) GetStatus() string {
 	return ""
 }
 
-type SetInitConfigRequest struct {
-	Time int64    `protobuf:"varint,1,opt,name=time" json:"time,omitempty"`
-	Meta *DevMeta `protobuf:"bytes,2,opt,name=meta" json:"meta,omitempty"`
+type PatchDevConfigRequest struct {
+	Config []byte `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 }
 
-func (m *SetInitConfigRequest) Reset()                    { *m = SetInitConfigRequest{} }
-func (m *SetInitConfigRequest) String() string            { return proto.CompactTextString(m) }
-func (*SetInitConfigRequest) ProtoMessage()               {}
-func (*SetInitConfigRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (m *PatchDevConfigRequest) Reset()                    { *m = PatchDevConfigRequest{} }
+func (m *PatchDevConfigRequest) String() string            { return proto.CompactTextString(m) }
+func (*PatchDevConfigRequest) ProtoMessage()               {}
+func (*PatchDevConfigRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
-func (m *SetInitConfigRequest) GetTime() int64 {
+func (m *PatchDevConfigRequest) GetConfig() []byte {
 	if m != nil {
-		return m.Time
-	}
-	return 0
-}
-
-func (m *SetInitConfigRequest) GetMeta() *DevMeta {
-	if m != nil {
-		return m.Meta
+		return m.Config
 	}
 	return nil
 }
 
-type SetInitConfigResponse struct {
+type PatchDevConfigResponse struct {
 	Status string `protobuf:"bytes,1,opt,name=status" json:"status,omitempty"`
 }
 
-func (m *SetInitConfigResponse) Reset()                    { *m = SetInitConfigResponse{} }
-func (m *SetInitConfigResponse) String() string            { return proto.CompactTextString(m) }
-func (*SetInitConfigResponse) ProtoMessage()               {}
-func (*SetInitConfigResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (m *PatchDevConfigResponse) Reset()                    { *m = PatchDevConfigResponse{} }
+func (m *PatchDevConfigResponse) String() string            { return proto.CompactTextString(m) }
+func (*PatchDevConfigResponse) ProtoMessage()               {}
+func (*PatchDevConfigResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
-func (m *SetInitConfigResponse) GetStatus() string {
-	if m != nil {
-		return m.Status
-	}
-	return ""
-}
-
-type GetDevConfigRequest struct {
-	TurnedOn    bool   `protobuf:"varint,1,opt,name=turnedOn" json:"turnedOn,omitempty"`
-	CollectFreq int64  `protobuf:"varint,2,opt,name=collectFreq" json:"collectFreq,omitempty"`
-	SendFreq    int64  `protobuf:"varint,3,opt,name=sendFreq" json:"sendFreq,omitempty"`
-	Mac         string `protobuf:"bytes,4,opt,name=mac" json:"mac,omitempty"`
-}
-
-func (m *GetDevConfigRequest) Reset()                    { *m = GetDevConfigRequest{} }
-func (m *GetDevConfigRequest) String() string            { return proto.CompactTextString(m) }
-func (*GetDevConfigRequest) ProtoMessage()               {}
-func (*GetDevConfigRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-func (m *GetDevConfigRequest) GetTurnedOn() bool {
-	if m != nil {
-		return m.TurnedOn
-	}
-	return false
-}
-
-func (m *GetDevConfigRequest) GetCollectFreq() int64 {
-	if m != nil {
-		return m.CollectFreq
-	}
-	return 0
-}
-
-func (m *GetDevConfigRequest) GetSendFreq() int64 {
-	if m != nil {
-		return m.SendFreq
-	}
-	return 0
-}
-
-func (m *GetDevConfigRequest) GetMac() string {
-	if m != nil {
-		return m.Mac
-	}
-	return ""
-}
-
-type GetDevConfigResponse struct {
-	Status string `protobuf:"bytes,1,opt,name=status" json:"status,omitempty"`
-}
-
-func (m *GetDevConfigResponse) Reset()                    { *m = GetDevConfigResponse{} }
-func (m *GetDevConfigResponse) String() string            { return proto.CompactTextString(m) }
-func (*GetDevConfigResponse) ProtoMessage()               {}
-func (*GetDevConfigResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *GetDevConfigResponse) GetStatus() string {
+func (m *PatchDevConfigResponse) GetStatus() string {
 	if m != nil {
 		return m.Status
 	}
@@ -249,13 +192,12 @@ func (m *GetDevConfigResponse) GetStatus() string {
 
 func init() {
 	proto.RegisterType((*DevMeta)(nil), "pb.DevMeta")
-	proto.RegisterType((*FridgeData)(nil), "pb.FridgeData")
+	proto.RegisterType((*SetDevInitConfigRequest)(nil), "pb.SetDevInitConfigRequest")
+	proto.RegisterType((*SetDevInitConfigResponse)(nil), "pb.SetDevInitConfigResponse")
 	proto.RegisterType((*SaveDevDataRequest)(nil), "pb.SaveDevDataRequest")
 	proto.RegisterType((*SaveDevDataResponse)(nil), "pb.SaveDevDataResponse")
-	proto.RegisterType((*SetInitConfigRequest)(nil), "pb.SetInitConfigRequest")
-	proto.RegisterType((*SetInitConfigResponse)(nil), "pb.SetInitConfigResponse")
-	proto.RegisterType((*GetDevConfigRequest)(nil), "pb.GetDevConfigRequest")
-	proto.RegisterType((*GetDevConfigResponse)(nil), "pb.GetDevConfigResponse")
+	proto.RegisterType((*PatchDevConfigRequest)(nil), "pb.PatchDevConfigRequest")
+	proto.RegisterType((*PatchDevConfigResponse)(nil), "pb.PatchDevConfigResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -266,12 +208,107 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// Client API for CenterService service
+
+type CenterServiceClient interface {
+	SetDevInitConfig(ctx context.Context, in *SetDevInitConfigRequest, opts ...grpc.CallOption) (*SetDevInitConfigResponse, error)
+	SaveDevData(ctx context.Context, in *SaveDevDataRequest, opts ...grpc.CallOption) (*SaveDevDataResponse, error)
+}
+
+type centerServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewCenterServiceClient(cc *grpc.ClientConn) CenterServiceClient {
+	return &centerServiceClient{cc}
+}
+
+func (c *centerServiceClient) SetDevInitConfig(ctx context.Context, in *SetDevInitConfigRequest, opts ...grpc.CallOption) (*SetDevInitConfigResponse, error) {
+	out := new(SetDevInitConfigResponse)
+	err := grpc.Invoke(ctx, "/pb.CenterService/SetDevInitConfig", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *centerServiceClient) SaveDevData(ctx context.Context, in *SaveDevDataRequest, opts ...grpc.CallOption) (*SaveDevDataResponse, error) {
+	out := new(SaveDevDataResponse)
+	err := grpc.Invoke(ctx, "/pb.CenterService/SaveDevData", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for CenterService service
+
+type CenterServiceServer interface {
+	SetDevInitConfig(context.Context, *SetDevInitConfigRequest) (*SetDevInitConfigResponse, error)
+	SaveDevData(context.Context, *SaveDevDataRequest) (*SaveDevDataResponse, error)
+}
+
+func RegisterCenterServiceServer(s *grpc.Server, srv CenterServiceServer) {
+	s.RegisterService(&_CenterService_serviceDesc, srv)
+}
+
+func _CenterService_SetDevInitConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetDevInitConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CenterServiceServer).SetDevInitConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.CenterService/SetDevInitConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CenterServiceServer).SetDevInitConfig(ctx, req.(*SetDevInitConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CenterService_SaveDevData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveDevDataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CenterServiceServer).SaveDevData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.CenterService/SaveDevData",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CenterServiceServer).SaveDevData(ctx, req.(*SaveDevDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _CenterService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pb.CenterService",
+	HandlerType: (*CenterServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SetDevInitConfig",
+			Handler:    _CenterService_SetDevInitConfig_Handler,
+		},
+		{
+			MethodName: "SaveDevData",
+			Handler:    _CenterService_SaveDevData_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "fridgems.proto",
+}
+
 // Client API for DevService service
 
 type DevServiceClient interface {
-	SaveDevData(ctx context.Context, in *SaveDevDataRequest, opts ...grpc.CallOption) (*SaveDevDataResponse, error)
-	GetDevConfig(ctx context.Context, in *GetDevConfigRequest, opts ...grpc.CallOption) (*GetDevConfigResponse, error)
-	SetInitConfig(ctx context.Context, in *SetInitConfigRequest, opts ...grpc.CallOption) (*SetInitConfigResponse, error)
+	PatchDevConfig(ctx context.Context, in *PatchDevConfigRequest, opts ...grpc.CallOption) (*PatchDevConfigResponse, error)
 }
 
 type devServiceClient struct {
@@ -282,27 +319,9 @@ func NewDevServiceClient(cc *grpc.ClientConn) DevServiceClient {
 	return &devServiceClient{cc}
 }
 
-func (c *devServiceClient) SaveDevData(ctx context.Context, in *SaveDevDataRequest, opts ...grpc.CallOption) (*SaveDevDataResponse, error) {
-	out := new(SaveDevDataResponse)
-	err := grpc.Invoke(ctx, "/pb.DevService/SaveDevData", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *devServiceClient) GetDevConfig(ctx context.Context, in *GetDevConfigRequest, opts ...grpc.CallOption) (*GetDevConfigResponse, error) {
-	out := new(GetDevConfigResponse)
-	err := grpc.Invoke(ctx, "/pb.DevService/GetDevConfig", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *devServiceClient) SetInitConfig(ctx context.Context, in *SetInitConfigRequest, opts ...grpc.CallOption) (*SetInitConfigResponse, error) {
-	out := new(SetInitConfigResponse)
-	err := grpc.Invoke(ctx, "/pb.DevService/SetInitConfig", in, out, c.cc, opts...)
+func (c *devServiceClient) PatchDevConfig(ctx context.Context, in *PatchDevConfigRequest, opts ...grpc.CallOption) (*PatchDevConfigResponse, error) {
+	out := new(PatchDevConfigResponse)
+	err := grpc.Invoke(ctx, "/pb.DevService/PatchDevConfig", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -312,65 +331,27 @@ func (c *devServiceClient) SetInitConfig(ctx context.Context, in *SetInitConfigR
 // Server API for DevService service
 
 type DevServiceServer interface {
-	SaveDevData(context.Context, *SaveDevDataRequest) (*SaveDevDataResponse, error)
-	GetDevConfig(context.Context, *GetDevConfigRequest) (*GetDevConfigResponse, error)
-	SetInitConfig(context.Context, *SetInitConfigRequest) (*SetInitConfigResponse, error)
+	PatchDevConfig(context.Context, *PatchDevConfigRequest) (*PatchDevConfigResponse, error)
 }
 
 func RegisterDevServiceServer(s *grpc.Server, srv DevServiceServer) {
 	s.RegisterService(&_DevService_serviceDesc, srv)
 }
 
-func _DevService_SaveDevData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveDevDataRequest)
+func _DevService_PatchDevConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchDevConfigRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DevServiceServer).SaveDevData(ctx, in)
+		return srv.(DevServiceServer).PatchDevConfig(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pb.DevService/SaveDevData",
+		FullMethod: "/pb.DevService/PatchDevConfig",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DevServiceServer).SaveDevData(ctx, req.(*SaveDevDataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DevService_GetDevConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDevConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DevServiceServer).GetDevConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pb.DevService/GetDevConfig",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DevServiceServer).GetDevConfig(ctx, req.(*GetDevConfigRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DevService_SetInitConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetInitConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DevServiceServer).SetInitConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pb.DevService/SetInitConfig",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DevServiceServer).SetInitConfig(ctx, req.(*SetInitConfigRequest))
+		return srv.(DevServiceServer).PatchDevConfig(ctx, req.(*PatchDevConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -380,16 +361,8 @@ var _DevService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*DevServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SaveDevData",
-			Handler:    _DevService_SaveDevData_Handler,
-		},
-		{
-			MethodName: "GetDevConfig",
-			Handler:    _DevService_GetDevConfig_Handler,
-		},
-		{
-			MethodName: "SetInitConfig",
-			Handler:    _DevService_SetInitConfig_Handler,
+			MethodName: "PatchDevConfig",
+			Handler:    _DevService_PatchDevConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -399,34 +372,26 @@ var _DevService_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("fridgems.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 454 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x5d, 0x8f, 0x93, 0x40,
-	0x14, 0x75, 0xa0, 0xae, 0xf5, 0xb2, 0x6b, 0xcc, 0x6c, 0x5d, 0x91, 0x98, 0xd8, 0xf0, 0xd4, 0x17,
-	0x31, 0xe2, 0xcb, 0x46, 0x5f, 0x4c, 0x8a, 0x35, 0xc6, 0x18, 0x93, 0xa9, 0x7f, 0x60, 0x4a, 0xef,
-	0x6e, 0x88, 0x65, 0x60, 0xe1, 0x42, 0xd2, 0x47, 0x7f, 0xa7, 0xff, 0xc4, 0x27, 0x33, 0x03, 0x74,
-	0xc1, 0xe2, 0x1a, 0xdf, 0xee, 0xd7, 0xb9, 0xe7, 0xcc, 0xb9, 0x04, 0x78, 0x74, 0x55, 0x24, 0xdb,
-	0x6b, 0x4c, 0xcb, 0x20, 0x2f, 0x32, 0xca, 0xb8, 0x95, 0x6f, 0xfc, 0x25, 0x3c, 0x88, 0xb0, 0xfe,
-	0x82, 0x24, 0x39, 0x87, 0x09, 0xed, 0x73, 0x74, 0xd9, 0x9c, 0x2d, 0x1e, 0x0a, 0x13, 0xeb, 0x9a,
-	0x92, 0x29, 0xba, 0x56, 0x53, 0xd3, 0x31, 0x7f, 0x0c, 0x76, 0x2a, 0x63, 0xd7, 0x36, 0x25, 0x1d,
-	0xfa, 0xbf, 0x18, 0xc0, 0xca, 0xec, 0x8e, 0x24, 0x49, 0x7e, 0x09, 0xd3, 0x6f, 0x98, 0xe6, 0x4b,
-	0x99, 0xbe, 0x76, 0xd9, 0xdc, 0x5e, 0x38, 0xe1, 0xf3, 0x20, 0xdf, 0x04, 0xb7, 0x13, 0x41, 0xd7,
-	0xfe, 0xa0, 0xa8, 0xd8, 0x8b, 0xc3, 0x74, 0x0f, 0x19, 0xba, 0xd6, 0x5d, 0xc8, 0x70, 0x88, 0x0c,
-	0xbd, 0x77, 0x70, 0x36, 0x58, 0xaa, 0x55, 0x7e, 0xc7, 0xbd, 0x79, 0x8c, 0x2d, 0x74, 0xc8, 0x67,
-	0x70, 0xbf, 0x96, 0xbb, 0xaa, 0x79, 0x8c, 0x25, 0x9a, 0xe4, 0xad, 0x75, 0xc9, 0x7a, 0xe0, 0xf0,
-	0xbf, 0xc1, 0x7e, 0x05, 0x7c, 0x2d, 0x6b, 0x8c, 0xb0, 0xd6, 0x02, 0x05, 0xde, 0x54, 0x58, 0x12,
-	0xbf, 0x80, 0x13, 0x19, 0x53, 0x92, 0xa9, 0xd6, 0xce, 0x36, 0x33, 0x26, 0x27, 0xad, 0xa1, 0xb6,
-	0x30, 0x31, 0x7f, 0x01, 0x93, 0x14, 0x49, 0x1a, 0x47, 0x9d, 0xd0, 0xd1, 0x2f, 0x6e, 0x6f, 0x22,
-	0x4c, 0x43, 0x83, 0xb6, 0x92, 0xa4, 0x3b, 0x99, 0xb3, 0xc5, 0xa9, 0x30, 0xb1, 0xff, 0x12, 0xce,
-	0x07, 0xb4, 0x65, 0x9e, 0xa9, 0x12, 0x35, 0x6f, 0x49, 0x92, 0xaa, 0xb2, 0xe3, 0x6d, 0x32, 0xff,
-	0x33, 0xcc, 0xd6, 0x48, 0x9f, 0x54, 0x42, 0xcb, 0x4c, 0x5d, 0x25, 0xd7, 0x9d, 0xce, 0x4e, 0x0f,
-	0x1b, 0xd1, 0x63, 0xfd, 0x45, 0x8f, 0xff, 0x0a, 0x9e, 0xfc, 0xb1, 0xec, 0x1f, 0xec, 0x3f, 0x18,
-	0x9c, 0x7f, 0x44, 0x8a, 0xb0, 0x1e, 0xb2, 0x7b, 0x30, 0xa5, 0xaa, 0x50, 0xb8, 0xfd, 0xda, 0xf8,
-	0x34, 0x15, 0x87, 0x9c, 0xcf, 0xc1, 0x89, 0xb3, 0xdd, 0x0e, 0x63, 0x5a, 0x15, 0x78, 0xd3, 0x1a,
-	0xd6, 0x2f, 0x69, 0x74, 0x89, 0x6a, 0x6b, 0xda, 0xb6, 0x69, 0x1f, 0xf2, 0xee, 0x23, 0x9d, 0xdc,
-	0x7e, 0xa4, 0x01, 0xcc, 0x86, 0x12, 0xee, 0xd6, 0x1c, 0xfe, 0x64, 0x00, 0x11, 0xd6, 0x6b, 0x2c,
-	0xea, 0x24, 0x46, 0xfe, 0x1e, 0x9c, 0x9e, 0xdf, 0xfc, 0x42, 0xbb, 0x72, 0x7c, 0x77, 0xef, 0xe9,
-	0x51, 0xbd, 0xa1, 0xf1, 0xef, 0xf1, 0x25, 0x9c, 0xf6, 0x05, 0x70, 0x33, 0x3a, 0xe2, 0x8a, 0xe7,
-	0x1e, 0x37, 0x0e, 0x4b, 0x56, 0x70, 0x36, 0xb0, 0x9e, 0x9b, 0xe1, 0xb1, 0xd3, 0x7a, 0xcf, 0x46,
-	0x3a, 0xdd, 0x9e, 0xcd, 0x89, 0xf9, 0x05, 0xbc, 0xf9, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x0c, 0xe0,
-	0xde, 0x43, 0x14, 0x04, 0x00, 0x00,
+	// 326 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x52, 0xcb, 0x4e, 0xc2, 0x50,
+	0x10, 0x95, 0x47, 0x30, 0x0e, 0x48, 0xc8, 0x18, 0xa1, 0x56, 0x13, 0xcd, 0x5d, 0xb9, 0x11, 0x4d,
+	0xfd, 0x01, 0x13, 0xba, 0x61, 0xe1, 0x23, 0x65, 0xe1, 0xca, 0xc5, 0xa5, 0x0c, 0xd8, 0x45, 0x1f,
+	0xb6, 0xc3, 0x4d, 0xfc, 0x1d, 0xbf, 0xd4, 0xdc, 0xa1, 0x44, 0x81, 0xe2, 0xc6, 0xdd, 0x99, 0x33,
+	0x9d, 0x33, 0x73, 0x4e, 0x2f, 0x74, 0xe7, 0x79, 0x34, 0x5b, 0x50, 0x5c, 0x0c, 0xb3, 0x3c, 0xe5,
+	0x14, 0xeb, 0xd9, 0x54, 0x8d, 0xe0, 0xd0, 0x27, 0xf3, 0x48, 0xac, 0x11, 0xa1, 0xc9, 0x9f, 0x19,
+	0x39, 0xb5, 0xab, 0xda, 0xf5, 0x51, 0x20, 0xd8, 0x72, 0x89, 0x8e, 0xc9, 0xa9, 0xaf, 0x38, 0x8b,
+	0xb1, 0x07, 0x8d, 0x58, 0x87, 0x4e, 0x43, 0x28, 0x0b, 0xd5, 0x13, 0x0c, 0x26, 0xc4, 0x3e, 0x99,
+	0x71, 0x12, 0xf1, 0x28, 0x4d, 0xe6, 0xd1, 0x22, 0xa0, 0x8f, 0x25, 0x15, 0x2c, 0xa2, 0x51, 0xbc,
+	0x12, 0x6d, 0x04, 0x82, 0xf1, 0x12, 0x9a, 0x31, 0xb1, 0x16, 0xd1, 0xb6, 0xd7, 0x1e, 0x66, 0xd3,
+	0x61, 0x79, 0x43, 0x20, 0x0d, 0xe5, 0x81, 0xb3, 0xab, 0x57, 0x64, 0x69, 0x52, 0x10, 0xf6, 0xa1,
+	0x15, 0x0a, 0x23, 0x92, 0x9d, 0xa0, 0xac, 0xd4, 0x1b, 0xe0, 0x44, 0x1b, 0xf2, 0xc9, 0xf8, 0x9a,
+	0xf5, 0x7f, 0xd6, 0xdb, 0xa1, 0x99, 0x66, 0x2d, 0x0e, 0x3b, 0x81, 0x60, 0x75, 0x03, 0x27, 0x1b,
+	0xf2, 0x3f, 0xd7, 0x14, 0xac, 0x79, 0x59, 0x94, 0xa9, 0x95, 0x95, 0xba, 0x85, 0xd3, 0x17, 0xcd,
+	0xe1, 0xbb, 0x4f, 0x66, 0x33, 0x8f, 0x7d, 0xe7, 0xdf, 0x41, 0x7f, 0x7b, 0xe0, 0xef, 0x15, 0xde,
+	0x57, 0x0d, 0x8e, 0x47, 0x94, 0x30, 0xe5, 0x13, 0xca, 0x4d, 0x14, 0x12, 0x3e, 0x43, 0x6f, 0x3b,
+	0x36, 0x3c, 0xb7, 0xf6, 0xf6, 0xfc, 0x1c, 0xf7, 0xa2, 0xba, 0xb9, 0x5a, 0xac, 0x0e, 0xf0, 0x01,
+	0xda, 0xbf, 0x4c, 0x63, 0x5f, 0x3e, 0xdf, 0x09, 0xd9, 0x1d, 0xec, 0xf0, 0x6b, 0x05, 0xef, 0x15,
+	0xc0, 0x27, 0xb3, 0x3e, 0x70, 0x0c, 0xdd, 0x4d, 0x93, 0x78, 0x66, 0x47, 0x2b, 0x93, 0x72, 0xdd,
+	0xaa, 0xd6, 0x5a, 0x78, 0xda, 0x92, 0x27, 0x7c, 0xff, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x7e, 0x3c,
+	0xe2, 0x37, 0xd4, 0x02, 0x00, 0x00,
 }

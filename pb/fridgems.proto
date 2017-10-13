@@ -4,10 +4,9 @@ package pb;
 // Run protoc -I pb/ pb/fridgems.proto --go_out=plugins=grpc:pb
 // to generate fridgems.pb.go
 
-service DevService {
+service CenterService {
+    rpc SetDevInitConfig(SetDevInitConfigRequest) returns (SetDevInitConfigResponse) {}
     rpc SaveDevData(SaveDevDataRequest) returns (SaveDevDataResponse) {}
-    rpc GetDevConfig(GetDevConfigRequest) returns (GetDevConfigResponse) {}
-    rpc SetInitConfig(SetInitConfigRequest) returns (SetInitConfigResponse) {}
 }
 
 message DevMeta {
@@ -16,36 +15,30 @@ message DevMeta {
     string mac = 3;
 }
 
-message FridgeData {
-    map<int64, float> TempCam1  = 1;
-    map<int64, float> TempCam2  = 2;
+message SetDevInitConfigRequest {
+    int64 time = 1;
+    DevMeta meta = 2;
+}
+message SetDevInitConfigResponse {
+    bytes config = 1;
 }
 
 message SaveDevDataRequest {
-    string action = 1;
-    int64 time = 2;
-    DevMeta meta = 3;
-    bytes data = 4;
+    int64 time = 1;
+    DevMeta meta = 2;
+    bytes data = 3;
 }
 message SaveDevDataResponse {
     string status = 1;
 }
 
-message SetInitConfigRequest {
-    int64 time = 1;
-    DevMeta meta = 2;
+service DevService {
+    rpc PatchDevConfig(PatchDevConfigRequest) returns (PatchDevConfigResponse) {}
 }
 
-message SetInitConfigResponse {
-    string status = 1;
+message PatchDevConfigRequest {
+    bytes config = 1;
 }
-
-message GetDevConfigRequest {
-    bool turnedOn = 1;
-    int64 collectFreq = 2;
-    int64 sendFreq = 3;
-    string mac = 4;
-}
-message GetDevConfigResponse {
+message PatchDevConfigResponse {
     string status = 1;
 }

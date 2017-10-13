@@ -17,7 +17,7 @@ import (
 )
 
 //DataCollector setups dataCollector
-func DataCollector(с *Configuration, cBot <-chan entities.FridgeGenerData,
+func DataCollector(c *Configuration, cBot <-chan entities.FridgeGenerData,
 	cTop <-chan entities.FridgeGenerData, ReqChan chan entities.FridgeRequest, ctrl *entities.RoutinesController) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -26,40 +26,40 @@ func DataCollector(с *Configuration, cBot <-chan entities.FridgeGenerData,
 		}
 	}()
 
-	duration := с.GetSendFreq()
+	duration := c.GetSendFreq()
 	stopInner := make(chan struct{})
 	ticker := time.NewTicker(time.Duration(duration) * time.Millisecond)
 
 	configChanged := make(chan struct{})
-	с.Subscribe("dataCollector", configChanged)
+	c.Subscribe("dataCollector", configChanged)
 
-	if с.GetTurnedOn() {
+	if c.GetTurnedOn() {
 		go dataCollector(ticker, cBot, cTop, ReqChan, stopInner)
 	}
 
 	for {
 		select {
 		case <-configChanged:
-			state := с.GetTurnedOn()
+			state := c.GetTurnedOn()
 			switch state {
 			case true:
 				select {
 				case <-stopInner:
 					stopInner = make(chan struct{})
-					ticker = time.NewTicker(time.Duration(с.GetSendFreq()) * time.Millisecond)
+					ticker = time.NewTicker(time.Duration(c.GetSendFreq()) * time.Millisecond)
 					go dataCollector(ticker, cBot, cTop, ReqChan, stopInner)
 					log.Println("dataCollector() has been started")
 				default:
 					close(stopInner)
 					stopInner = make(chan struct{})
-					ticker = time.NewTicker(time.Duration(с.GetSendFreq()) * time.Millisecond)
+					ticker = time.NewTicker(time.Duration(c.GetSendFreq()) * time.Millisecond)
 					go dataCollector(ticker, cBot, cTop, ReqChan, stopInner)
 					log.Println("dataCollector() has been started")
 				}
 			case false:
 				select {
 				case <-stopInner:
-					ticker = time.NewTicker(time.Duration(с.GetSendFreq()) * time.Millisecond)
+					ticker = time.NewTicker(time.Duration(c.GetSendFreq()) * time.Millisecond)
 				default:
 					close(stopInner)
 					log.Println("dataCollector() has been killed")
@@ -105,7 +105,6 @@ func constructReq(mTop map[int64]float32, mBot map[int64]float32) entities.Fridg
 	fd.TempCam1 = mTop
 
 	fr := entities.FridgeRequest{
-		Action: "update",
 		Time:   time.Now().UnixNano(),
 		Meta: entities.DevMeta{
 			Type: "fridge",
@@ -257,16 +256,15 @@ func dial(s entities.Server) *grpc.ClientConn {
 
 func send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
 	fr.Time = time.Now().UnixNano()
-	client := pb.NewDevServiceClient(conn)
+	client := pb.NewCenterServiceClient(conn)
 
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(fr.Data)
 	if err != nil {
-		panic("data can't be encoded for sending")
+		panic("FridgeData can't be encoded for sending")
 	}
 
 	pbfr := &pb.SaveDevDataRequest{
-		Action: fr.Action,
 		Time:   fr.Time,
 		Meta: &pb.DevMeta{
 			Type: fr.Meta.Type,
@@ -279,7 +277,7 @@ func send(fr entities.FridgeRequest, conn *grpc.ClientConn) {
 	saveDevData(client, pbfr)
 }
 
-func saveDevData(c pb.DevServiceClient, req *pb.SaveDevDataRequest) {
+func saveDevData(c pb.CenterServiceClient, req *pb.SaveDevDataRequest) {
 	resp, err := c.SaveDevData(context.Background(), req)
 	if err != nil {
 		log.Error("saveFridgeData(): SaveFridgeData() has failed", err)

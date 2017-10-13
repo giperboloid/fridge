@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	log.Infof("fridge: name:[%s] MAC:[%s]", devName, devMAC)
+	log.Infof("fridge: name:[%s] MAC:[%s]", devMeta.Name, devMeta.MAC)
 
 	ctrl := &entities.RoutinesController{StopChan: make(chan struct{})}
 
@@ -24,12 +24,12 @@ func main() {
 		ReqChan: make(chan entities.FridgeRequest),
 	}
 
-	c := fridge.NewConfiguration()
-	c.SetInitConfig(devType, devName, devMAC, connType, &centerms, ctrl)
+	conf := fridge.NewConfiguration()
+	conf.SetInitConfig(entities.Server{centermsHost, devConfigPort}, &devMeta, ctrl)
 
-	go fridge.DataGenerator(c, collectFridgeData.CBot, collectFridgeData.CTop, ctrl)
-	go fridge.DataCollector(c, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, ctrl)
-	go fridge.DataSender(centerms, collectFridgeData.ReqChan, ctrl)
+	go fridge.DataGenerator(conf, collectFridgeData.CBot, collectFridgeData.CTop, ctrl)
+	go fridge.DataCollector(conf, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, ctrl)
+	go fridge.DataSender(entities.Server{centermsHost, devDataPort}, collectFridgeData.ReqChan, ctrl)
 
 	ctrl.Wait()
 	log.Info("fridgems is down")
