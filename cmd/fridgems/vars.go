@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+
 	"github.com/giperboloid/fridgems/entities"
 )
 
@@ -9,12 +10,13 @@ var (
 	devMeta = entities.DevMeta{
 		Type: "fridge",
 		Name: getDevName(),
-		MAC: getDevMAC(),
+		MAC:  getDevMAC(),
 	}
 
-	centermsHost  = getEnvCentermsHost("CENTERMS_TCP_ADDR")
-	devDataPort   = "3030"
-	devConfigPort = "3000"
+	fridgeConfigPort      = "4000"
+	centermsHost          = getEnvCentermsHost("CENTERMS_TCP_ADDR")
+	centermsDevDataPort   = "3030"
+	centermsDevConfigPort = "3000"
 )
 
 func getDevName() string {

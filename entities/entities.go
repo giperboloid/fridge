@@ -7,11 +7,6 @@ type Server struct {
 	Port string
 }
 
-type TransferConn struct {
-	Server   Server
-	ConnType string
-}
-
 type DevMeta struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
@@ -19,18 +14,14 @@ type DevMeta struct {
 }
 
 type FridgeData struct {
-	TempCam1 map[int64]float32 `json:"tempCam1"`
-	TempCam2 map[int64]float32 `json:"tempCam2"`
+	TempCam1 map[int64]float32
+	TempCam2 map[int64]float32
 }
 
 type FridgeRequest struct {
 	Time   int64      `json:"time"`
 	Meta   DevMeta   `json:"meta"`
 	Data   FridgeData `json:"data"`
-}
-
-type Response struct {
-	Descr string `json:"descr"`
 }
 
 type FridgeConfig struct {

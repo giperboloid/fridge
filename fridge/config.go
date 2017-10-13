@@ -12,6 +12,8 @@ import (
 	"golang.org/x/net/context"
 	"encoding/binary"
 	"bytes"
+	"fmt"
+	"google.golang.org/grpc"
 )
 
 type Configuration struct {
@@ -61,38 +63,60 @@ func (c *Configuration) SetInitConfig(s entities.Server, m *entities.DevMeta, ct
 
 	log.Infof("init config: %+v", fc)
 	c.update(&fc)
+
+	go c.listenConfigPatch(s, time.NewTicker(time.Second * 3))
+}
+
+func (c *Configuration) listenConfigPatch(s entities.Server, r *time.Ticker) {
+	ln, err := net.Listen("tcp", "127.0.0.1"+":"+fmt.Sprint("4000"))
+	if err != nil {
+		log.Errorf("listenConfigPatch(): Listen() has failed: %s", err)
+	}
+
+	for err != nil {
+		for range r.C {
+			ln, err = net.Listen("tcp", "127.0.0.1"+":"+fmt.Sprint("4000"))
+			if err != nil {
+				log.Errorf("listenConfigPatch(): Listen() has failed: %s", err)
+			}
+		}
+		r.Stop()
+	}
+
+	gs := grpc.NewServer()
+	pb.RegisterDevServiceServer(gs, c)
+	gs.Serve(ln)
+}
+
+func (c *Configuration) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfigRequest) (*pb.PatchDevConfigResponse, error) {
+	buf := &bytes.Buffer{}
+	if err := binary.Write(buf, binary.BigEndian, r.Config); err != nil {
+		panic(err)
+	}
+
+	var fc entities.FridgeConfig
+	if err := json.NewDecoder(buf).Decode(&fc); err != nil {
+		panic("config patch decoding has failed")
+	}
+
+	log.Infof("config patch: %+v", fc)
+	c.update(&fc)
+	return &pb.PatchDevConfigResponse{"OK"}, nil
 }
 
 func (c *Configuration) update(nfc *entities.FridgeConfig) {
-	c.TurnedOn = nfc.TurnedOn
-	c.SendFreq = nfc.SendFreq
-	c.CollectFreq = nfc.CollectFreq
-	if c.TurnedOn {
+	if nfc.TurnedOn && !c.TurnedOn {
 		log.Info("fridge is turned on")
-	} else {
+	} else if !nfc.TurnedOn && c.TurnedOn {
 		log.Info("fridge is turned off")
 	}
+
+	c.TurnedOn = nfc.TurnedOn
+	c.CollectFreq = nfc.CollectFreq
+	c.SendFreq = nfc.SendFreq
 }
 
-func (c *Configuration) listenConfig(conn net.Conn) {
-	var fc *entities.FridgeConfig
-	if err := json.NewDecoder(conn).Decode(&fc); err != nil {
-		panic("centerms hasn't been found")
-	}
-
-	c.update(fc)
-	go c.publish()
-
-	r := entities.Response{
-		Descr: "FridgeConfig has been received",
-	}
-
-	if err := json.NewEncoder(conn).Encode(&r); err != nil {
-		log.Errorf("listenConfig(): Encode JSON: %s", err)
-	}
-}
-
-func (c *Configuration) publish() {
+func (c *Configuration) publishConfigPatch() {
 	for _, v := range c.SubsPool {
 		v <- struct{}{}
 	}

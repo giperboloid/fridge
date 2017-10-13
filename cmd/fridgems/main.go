@@ -25,11 +25,11 @@ func main() {
 	}
 
 	conf := fridge.NewConfiguration()
-	conf.SetInitConfig(entities.Server{centermsHost, devConfigPort}, &devMeta, ctrl)
+	conf.SetInitConfig(entities.Server{centermsHost, centermsDevConfigPort}, &devMeta, ctrl)
 
 	go fridge.DataGenerator(conf, collectFridgeData.CBot, collectFridgeData.CTop, ctrl)
 	go fridge.DataCollector(conf, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, ctrl)
-	go fridge.DataSender(entities.Server{centermsHost, devDataPort}, collectFridgeData.ReqChan, ctrl)
+	go fridge.DataSender(entities.Server{centermsHost, centermsDevDataPort}, collectFridgeData.ReqChan, ctrl)
 
 	ctrl.Wait()
 	log.Info("fridgems is down")

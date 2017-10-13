@@ -197,24 +197,11 @@ func DataSender(s entities.Server, reqChan chan entities.FridgeRequest, c *entit
 	defer func() {
 		if r := recover(); r != nil {
 			log.Errorf("DataSender(): panic(): %s", r)
-		}
-	}()
-
-	transferConn := entities.TransferConn{
-		Server: entities.Server{
-			Host: s.Host,
-			Port: "3030"},
-		ConnType: "tcp",
-	}
-
-	defer func() {
-		if a := recover(); a != nil {
-			log.Error(a)
 			c.Terminate()
 		}
 	}()
 
-	conn := dial(transferConn.Server)
+	conn := dial(s)
 	defer conn.Close()
 
 	for {
