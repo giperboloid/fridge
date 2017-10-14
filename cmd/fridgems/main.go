@@ -3,13 +3,13 @@ package main
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
-	"github.com/giperboloid/fridgems/fridge"
+	"github.com/giperboloid/fridgems/services"
 )
 
 func main() {
-	log.Infof("fridge: name:[%s] MAC:[%s]", devMeta.Name, devMeta.MAC)
+	log.Infof("services: name:[%s] MAC:[%s]", devMeta.Name, devMeta.MAC)
 
-	ctrl := &entities.RoutinesController{StopChan: make(chan struct{})}
+	ctrl := &entities.ServicesController{StopChan: make(chan struct{})}
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -18,18 +18,12 @@ func main() {
 		}
 	}()
 
-	collectFridgeData := entities.CollectFridgeData{
-		CTop:    make(chan entities.FridgeGenerData, 100),
-		CBot:    make(chan entities.FridgeGenerData, 100),
-		ReqChan: make(chan entities.FridgeRequest),
-	}
+	cs := services.NewConfigService(&devMeta, entities.Server{centerHost, centerDevConfigPort}, ctrl)
+	cs.SetInitConfig()
+	config := cs.GetConfig()
 
-	conf := fridge.NewConfiguration()
-	conf.SetInitConfig(entities.Server{centermsHost, centermsDevConfigPort}, &devMeta, ctrl)
-
-	go fridge.DataGenerator(conf, collectFridgeData.CBot, collectFridgeData.CTop, ctrl)
-	go fridge.DataCollector(conf, collectFridgeData.CBot, collectFridgeData.CTop, collectFridgeData.ReqChan, ctrl)
-	go fridge.DataSender(entities.Server{centermsHost, centermsDevDataPort}, collectFridgeData.ReqChan, ctrl)
+	ds := services.NewDataService(config, entities.Server{centerHost, centerDevDataPort}, ctrl)
+	ds.Run()
 
 	ctrl.Wait()
 	log.Info("fridgems is down")

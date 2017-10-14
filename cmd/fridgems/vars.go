@@ -13,10 +13,10 @@ var (
 		MAC:  getDevMAC(),
 	}
 
-	fridgeConfigPort      = "4000"
-	centermsHost          = getEnvCentermsHost("CENTERMS_TCP_ADDR")
-	centermsDevDataPort   = "3030"
-	centermsDevConfigPort = "3000"
+	fridgeConfigPort    = "4000"
+	centerHost          = getEnvCentermsHost("CENTERMS_TCP_ADDR")
+	centerDevDataPort   = "3030"
+	centerDevConfigPort = "3000"
 )
 
 func getDevName() string {
