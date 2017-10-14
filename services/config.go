@@ -2,26 +2,23 @@ package services
 
 import (
 	"encoding/json"
-	"net"
 	"sync"
+
+	"bytes"
+	"encoding/binary"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
 	"github.com/giperboloid/fridgems/pb"
-	"time"
+	"github.com/logrus"
 	"golang.org/x/net/context"
-	"encoding/binary"
-	"bytes"
-	"fmt"
-	"google.golang.org/grpc"
 )
 
 type Configuration struct {
 	sync.Mutex
-	TurnedOn    bool
-	CollectFreq int64
-	SendFreq    int64
-	SubsPool    map[string]chan struct{}
+	entities.FridgeConfig
+	SubsPool map[string]chan struct{}
 }
 
 type ConfigService struct {
@@ -29,22 +26,26 @@ type ConfigService struct {
 	Center     entities.Server
 	Controller *entities.ServicesController
 	DevMeta    *entities.DevMeta
+	Log        *logrus.Logger
 }
 
-func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController) *ConfigService {
-	return &ConfigService {
+func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
+	l *logrus.Logger) *ConfigService {
+
+	return &ConfigService{
 		DevMeta: m,
 		Config: &Configuration{
 			SubsPool: make(map[string]chan struct{}),
 		},
-		Center: s,
+		Center:     s,
 		Controller: ctrl,
+		Log:        l,
 	}
 }
 
 func (s *ConfigService) SetInitConfig() {
 	pbic := &pb.SetDevInitConfigRequest{
-		Time:   time.Now().UnixNano(),
+		Time: time.Now().UnixNano(),
 		Meta: &pb.DevMeta{
 			Type: s.DevMeta.Type,
 			Name: s.DevMeta.Name,
@@ -56,15 +57,14 @@ func (s *ConfigService) SetInitConfig() {
 	defer conn.Close()
 
 	client := pb.NewCenterServiceClient(conn)
-
-	r, err := client.SetDevInitConfig(context.Background(), pbic)
+	resp, err := client.SetDevInitConfig(context.Background(), pbic)
 	if err != nil {
 		log.Error("SetInitConfig(): SetDevInitConfig() has failed: ", err)
 		panic("init config hasn't been received")
 	}
 
 	buf := &bytes.Buffer{}
-	if err := binary.Write(buf, binary.BigEndian, r.Config); err != nil {
+	if err := binary.Write(buf, binary.BigEndian, resp.Config); err != nil {
 		panic(err)
 	}
 
@@ -74,34 +74,11 @@ func (s *ConfigService) SetInitConfig() {
 	}
 
 	log.Infof("init config: %+v", fc)
-	s.update(&fc)
-
-	go s.listenConfigPatch(time.NewTicker(time.Second * 3))
+	s.updateConfig(&fc)
 }
 
 func (s *ConfigService) GetConfig() *Configuration {
 	return s.Config
-}
-
-func (s *ConfigService) listenConfigPatch(r *time.Ticker) {
-	ln, err := net.Listen("tcp", "127.0.0.1"+":"+fmt.Sprint("4000"))
-	if err != nil {
-		log.Errorf("listenConfigPatch(): Listen() has failed: %s", err)
-	}
-
-	for err != nil {
-		for range r.C {
-			ln, err = net.Listen("tcp", "127.0.0.1"+":"+fmt.Sprint("4000"))
-			if err != nil {
-				log.Errorf("listenConfigPatch(): Listen() has failed: %s", err)
-			}
-		}
-		r.Stop()
-	}
-
-	gs := grpc.NewServer()
-	pb.RegisterDevServiceServer(gs, s)
-	gs.Serve(ln)
 }
 
 func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfigRequest) (*pb.PatchDevConfigResponse, error) {
@@ -116,68 +93,66 @@ func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfig
 	}
 
 	log.Infof("config patch: %+v", fc)
-	s.update(&fc)
-	return &pb.PatchDevConfigResponse{Status:"OK"}, nil
+	s.updateConfig(&fc)
+	return &pb.PatchDevConfigResponse{Status: "OK"}, nil
 }
 
-func (s *ConfigService) update(nfc *entities.FridgeConfig) {
+func (s *ConfigService) updateConfig(nfc *entities.FridgeConfig) {
 	if nfc.TurnedOn && !s.Config.TurnedOn {
-		log.Info("services is turned on")
+		log.Info("fridge is turned on")
 	} else if !nfc.TurnedOn && s.Config.TurnedOn {
-		log.Info("services is turned off")
+		log.Info("fridge is turned off")
 	}
 
-	s.Config.TurnedOn = nfc.TurnedOn
+	//s.Config.TurnedOn = nfc.TurnedOn
+	s.Config.TurnedOn = true
 	s.Config.CollectFreq = nfc.CollectFreq
 	s.Config.SendFreq = nfc.SendFreq
+
+	s.Config.publishPatchedConfig()
 }
 
-func (s *Configuration) publishConfigPatch() {
-	for _, v := range s.SubsPool {
+func (c *Configuration) publishPatchedConfig() {
+	for _, v := range c.SubsPool {
 		v <- struct{}{}
 	}
 }
 
-func (s *Configuration) Subscribe(key string, value chan struct{}) {
-	s.Mutex.Lock()
-	s.SubsPool[key] = value
-	s.Mutex.Unlock()
-}
-func (s *Configuration) Unsubscribe(key string) {
-	s.Mutex.Lock()
-	delete(s.SubsPool, key)
-	s.Mutex.Unlock()
+func (c *Configuration) Subscribe(key string, value chan struct{}) {
+	c.Mutex.Lock()
+	c.SubsPool[key] = value
+	c.Mutex.Unlock()
 }
 
-func (s *Configuration) GetTurnedOn() bool {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-	return s.TurnedOn
+func (c *Configuration) GetTurnedOn() bool {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	return c.TurnedOn
 }
-func (s *Configuration) SetTurnedOn(b bool) {
-	s.Mutex.Lock()
-	s.TurnedOn = b
-	s.Mutex.Unlock()
-}
-
-func (s *Configuration) GetCollectFreq() int64 {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-	return s.CollectFreq
-}
-func (s *Configuration) SetCollectFreq(cf int64) {
-	s.Mutex.Lock()
-	s.CollectFreq = cf
-	s.Mutex.Unlock()
+func (c *Configuration) SetTurnedOn(b bool) {
+	c.Mutex.Lock()
+	c.TurnedOn = b
+	c.Mutex.Unlock()
 }
 
-func (s *Configuration) GetSendFreq() int64 {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-	return s.SendFreq
+func (c *Configuration) GetCollectFreq() int64 {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	return c.CollectFreq
 }
-func (s *Configuration) SetSendFreq(sf int64) {
-	s.Mutex.Lock()
-	s.SendFreq = sf
-	s.Mutex.Unlock()
+func (c *Configuration) SetCollectFreq(cf int64) {
+	c.Mutex.Lock()
+	c.CollectFreq = cf
+	c.Mutex.Unlock()
+}
+
+func (c *Configuration) GetSendFreq() int64 {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	return c.SendFreq
+}
+func (c *Configuration) SetSendFreq(sf int64) {
+	c.Mutex.Lock()
+	c.SendFreq = sf
+	c.Mutex.Unlock()
 }

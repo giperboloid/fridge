@@ -13,10 +13,12 @@ var (
 		MAC:  getDevMAC(),
 	}
 
-	fridgeConfigPort    = "4000"
-	centerHost          = getEnvCentermsHost("CENTERMS_TCP_ADDR")
-	centerDevDataPort   = "3030"
-	centerDevConfigPort = "3000"
+	fridgemsHost = getEnvServerHost("FRIDGEMS_TCP_ADDR")
+	fridgemsConfigPort = "4000"
+
+	centermsHost       = getEnvServerHost("CENTERMS_TCP_ADDR")
+	centermsDataPort   = "3030"
+	centermsConfigPort = "3000"
 )
 
 func getDevName() string {
@@ -35,7 +37,7 @@ func getDevMAC() string {
 	return args[1]
 }
 
-func getEnvCentermsHost(key string) string {
+func getEnvServerHost(key string) string {
 	host := os.Getenv(key)
 	if len(host) == 0 {
 		return "127.0.0.1"
