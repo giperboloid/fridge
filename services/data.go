@@ -10,11 +10,10 @@ import (
 
 	"encoding/json"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
 	"github.com/giperboloid/fridgems/pb"
-	"github.com/logrus"
 	"google.golang.org/grpc"
+	"github.com/Sirupsen/logrus"
 )
 
 type FridgeData struct {
@@ -64,7 +63,7 @@ func (s *DataService) Run() {
 func (s *DataService) generateData() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("generateData(): panic(): %s", r)
+			s.Log.Errorf("generateData(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
@@ -91,14 +90,14 @@ func (s *DataService) generateData() {
 					stopInner = make(chan struct{})
 					ticker = time.NewTicker(time.Duration(s.Config.GetCollectFreq()) * time.Millisecond)
 					go dataGenerator(ticker, s.botCompart, s.topCompart, stopInner)
-					log.Println("dataGenerator() is running")
+					s.Log.Println("dataGenerator() is running")
 				default:
 					close(stopInner)
 					ticker.Stop()
 					stopInner = make(chan struct{})
 					ticker = time.NewTicker(time.Duration(s.Config.GetCollectFreq()) * time.Millisecond)
 					go dataGenerator(ticker, s.botCompart, s.topCompart, stopInner)
-					log.Println("dataGenerator() is running")
+					s.Log.Println("dataGenerator() is running")
 				}
 			case false:
 				select {
@@ -106,11 +105,11 @@ func (s *DataService) generateData() {
 					ticker = time.NewTicker(time.Duration(s.Config.GetCollectFreq()) * time.Millisecond)
 				default:
 					close(stopInner)
-					log.Println("dataGenerator() is down")
+					s.Log.Println("dataGenerator() is down")
 				}
 			}
 		case <-s.Controller.StopChan:
-			log.Error("generateData() is down")
+			s.Log.Error("generateData() is down")
 			return
 		}
 	}
@@ -124,7 +123,7 @@ func dataGenerator(t *time.Ticker, cBot chan<- FridgeGenData, cTop chan<- Fridge
 			cTop <- FridgeGenData{Time: currentTimestamp(), Data: rand.Float32() * 10}
 			cBot <- FridgeGenData{Time: currentTimestamp(), Data: (rand.Float32() * 10) - 8}
 		case <-stopInner:
-			log.Println("dataGenerator() is down")
+			logrus.Info("dataGenerator() is down")
 			return
 		}
 	}
@@ -137,7 +136,7 @@ func currentTimestamp() int64 {
 func (s *DataService) collectData() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("collectData(): panic(): %s", r)
+			s.Log.Errorf("collectData(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
@@ -164,13 +163,13 @@ func (s *DataService) collectData() {
 					stopInner = make(chan struct{})
 					ticker = time.NewTicker(time.Duration(s.Config.GetSendFreq()) * time.Millisecond)
 					go dataCollector(ticker, s.botCompart, s.topCompart, s.ReqChan, stopInner)
-					log.Println("dataCollector() is running")
+					s.Log.Println("dataCollector() is running")
 				default:
 					close(stopInner)
 					stopInner = make(chan struct{})
 					ticker = time.NewTicker(time.Duration(s.Config.GetSendFreq()) * time.Millisecond)
 					go dataCollector(ticker, s.botCompart, s.topCompart, s.ReqChan, stopInner)
-					log.Println("dataCollector() is running")
+					s.Log.Println("dataCollector() is running")
 				}
 			case false:
 				select {
@@ -178,11 +177,11 @@ func (s *DataService) collectData() {
 					ticker = time.NewTicker(time.Duration(s.Config.GetSendFreq()) * time.Millisecond)
 				default:
 					close(stopInner)
-					log.Println("dataCollector() is down")
+					s.Log.Println("dataCollector() is down")
 				}
 			}
 		case <-s.Controller.StopChan:
-			log.Error("collectData() is down")
+			s.Log.Error("collectData() is down")
 			return
 		}
 	}
@@ -196,7 +195,7 @@ func dataCollector(t *time.Ticker, cBot <-chan FridgeGenData, cTop <-chan Fridge
 	for {
 		select {
 		case <-stopInner:
-			log.Println("dataCollector() is down")
+			logrus.Println("dataCollector() is down")
 			return
 		case tv := <-cTop:
 			mTop[tv.Time] = tv.Data
@@ -233,7 +232,7 @@ func constructReq(mTop map[int64]float32, mBot map[int64]float32) FridgeRequest 
 func (s *DataService) sendData() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("sendData(): panic(): %s", r)
+			s.Log.Errorf("sendData(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
@@ -247,14 +246,14 @@ func (s *DataService) sendData() {
 			go func() {
 				defer func() {
 					if r := recover(); r != nil {
-						log.Error(r)
+						s.Log.Error(r)
 						s.Controller.Terminate()
 					}
 				}()
 				saveDevData(r, conn)
 			}()
 		case <-s.Controller.StopChan:
-			log.Error("sendData(): data sending has failed")
+			s.Log.Error("sendData(): data sending has failed")
 			return
 		}
 	}
@@ -270,10 +269,10 @@ func dial(s entities.Server) *grpc.ClientConn {
 		time.Sleep(time.Second)
 		conn, err = grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
 		if err != nil {
-			log.Errorf("dial(): grpc.Dial has failed: %s", err)
+			logrus.Printf("dial(): grpc.Dial has failed: %s", err)
 		}
 		count++
-		log.Infof("dial(): reconnect count: %d", count)
+		logrus.Printf("dial(): reconnect count: %d", count)
 	}
 	return conn
 }
@@ -299,7 +298,7 @@ func saveDevData(fr FridgeRequest, conn *grpc.ClientConn) {
 	client := pb.NewCenterServiceClient(conn)
 	resp, err := client.SaveDevData(context.Background(), pbfr)
 	if err != nil {
-		log.Error("saveFridgeData(): SaveFridgeData() has failed", err)
+		logrus.Println("saveFridgeData(): SaveFridgeData() has failed", err)
 	}
-	log.Infof("centerms has received DevData with status: %s", resp.Status)
+	logrus.Printf("centerms has received DevData with status: %s", resp.Status)
 }

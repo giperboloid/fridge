@@ -8,10 +8,9 @@ import (
 	"encoding/binary"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
 	"github.com/giperboloid/fridgems/pb"
-	"github.com/logrus"
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
@@ -59,7 +58,7 @@ func (s *ConfigService) SetInitConfig() {
 	client := pb.NewCenterServiceClient(conn)
 	resp, err := client.SetDevInitConfig(context.Background(), pbic)
 	if err != nil {
-		log.Error("SetInitConfig(): SetDevInitConfig() has failed: ", err)
+		s.Log.Error("SetInitConfig(): SetDevInitConfig() has failed: ", err)
 		panic("init config hasn't been received")
 	}
 
@@ -73,7 +72,7 @@ func (s *ConfigService) SetInitConfig() {
 		panic("init config decoding has failed")
 	}
 
-	log.Infof("init config: %+v", fc)
+	s.Log.Infof("init config: %+v", fc)
 	s.updateConfig(&fc)
 }
 
@@ -92,16 +91,16 @@ func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfig
 		panic("config patch decoding has failed")
 	}
 
-	log.Infof("config patch: %+v", fc)
+	s.Log.Infof("config patch: %+v", fc)
 	s.updateConfig(&fc)
 	return &pb.PatchDevConfigResponse{Status: "OK"}, nil
 }
 
 func (s *ConfigService) updateConfig(nfc *entities.FridgeConfig) {
 	if nfc.TurnedOn && !s.Config.TurnedOn {
-		log.Info("fridge is turned on")
+		s.Log.Info("fridge is turned on")
 	} else if !nfc.TurnedOn && s.Config.TurnedOn {
-		log.Info("fridge is turned off")
+		s.Log.Info("fridge is turned off")
 	}
 
 	//s.Config.TurnedOn = nfc.TurnedOn

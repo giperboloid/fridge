@@ -1,37 +1,61 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"time"
+
+	"github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
 	"github.com/giperboloid/fridgems/services"
-	"github.com/logrus"
-	"github.com/giperboloid/fridgems/api"
-	"time"
+	"github.com/giperboloid/fridgems/api/grpcsvc"
 )
 
 func main() {
-	log.Infof("fridgems is running on fridge with name:[%s] and MAC:[%s]", devMeta.Name, devMeta.MAC)
+	logrus.Infof("fridge is running with name:[%s] and MAC:[%s]", devMeta.Name, devMeta.MAC)
 
-	ctrl := &entities.ServicesController{StopChan: make(chan struct{})}
+	ctrl := &entities.ServicesController{
+		StopChan: make(chan struct{},
+	)}
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("main(): panic(): %s", r)
+			logrus.Errorf("main(): panic(): %s", r)
 			ctrl.Terminate()
 		}
 	}()
 
-	cs := services.NewConfigService(&devMeta, entities.Server{centermsHost, centermsConfigPort}, ctrl, logrus.New())
+	cs := services.NewConfigService(
+		&devMeta,
+		entities.Server{
+			Host: centermsHost,
+			Port: centermsConfigPort,
+		},
+		ctrl,
+		logrus.New(),
+	)
+
 	cs.SetInitConfig()
 	config := cs.GetConfig()
 
-	reconnect := time.NewTicker(time.Second * 3)
-	a := api.NewAPI(cs, reconnect, entities.Server{fridgemsHost,fridgemsConfigPort})
-	go a.Listen()
+	grpcsvc.Init(grpcsvc.GRPCConfig{
+		ConfigService: cs,
+		Reconnect: time.NewTicker(time.Second * 3),
+		Server: entities.Server{
+			Host: fridgemsHost,
+			Port: fridgemsConfigPort,
+		},
+	})
 
-	ds := services.NewDataService(config, entities.Server{centermsHost, centermsDataPort}, ctrl, logrus.New())
+	ds := services.NewDataService(
+		config,
+		entities.Server{
+			Host: centermsHost,
+			Port: centermsDataPort,
+		},
+		ctrl,
+		logrus.New(),
+	)
 	ds.Run()
 
 	ctrl.Wait()
-	log.Info("fridgems is down")
+	logrus.Info("fridge is down")
 }

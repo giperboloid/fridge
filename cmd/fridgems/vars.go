@@ -14,7 +14,7 @@ var (
 	}
 
 	fridgemsHost = getEnvServerHost("FRIDGEMS_TCP_ADDR")
-	fridgemsConfigPort = "4000"
+	fridgemsConfigPort = "4040"
 
 	centermsHost       = getEnvServerHost("CENTERMS_TCP_ADDR")
 	centermsDataPort   = "3030"
