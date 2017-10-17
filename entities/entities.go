@@ -13,12 +13,6 @@ type DevMeta struct {
 	MAC  string
 }
 
-type FridgeConfig struct {
-	TurnedOn    bool
-	CollectFreq int64
-	SendFreq    int64
-}
-
 type ServicesController struct {
 	StopChan chan struct{}
 }

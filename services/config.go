@@ -14,107 +14,16 @@ import (
 	"golang.org/x/net/context"
 )
 
+type FridgeConfig struct {
+	TurnedOn    bool
+	CollectFreq int64
+	SendFreq    int64
+}
+
 type Configuration struct {
 	sync.Mutex
-	entities.FridgeConfig
+	FridgeConfig
 	SubsPool map[string]chan struct{}
-}
-
-type ConfigService struct {
-	Config     *Configuration
-	Center     entities.Server
-	Controller *entities.ServicesController
-	DevMeta    *entities.DevMeta
-	Log        *logrus.Logger
-}
-
-func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
-	l *logrus.Logger) *ConfigService {
-
-	return &ConfigService{
-		DevMeta: m,
-		Config: &Configuration{
-			SubsPool: make(map[string]chan struct{}),
-		},
-		Center:     s,
-		Controller: ctrl,
-		Log:        l,
-	}
-}
-
-func (s *ConfigService) SetInitConfig() {
-	pbic := &pb.SetDevInitConfigRequest{
-		Time: time.Now().UnixNano(),
-		Meta: &pb.DevMeta{
-			Type: s.DevMeta.Type,
-			Name: s.DevMeta.Name,
-			Mac:  s.DevMeta.MAC,
-		},
-	}
-
-	conn := dial(s.Center)
-	defer conn.Close()
-
-	client := pb.NewCenterServiceClient(conn)
-	resp, err := client.SetDevInitConfig(context.Background(), pbic)
-	if err != nil {
-		s.Log.Error("SetInitConfig(): SetDevInitConfig() has failed: ", err)
-		panic("init config hasn't been received")
-	}
-
-	buf := &bytes.Buffer{}
-	if err := binary.Write(buf, binary.BigEndian, resp.Config); err != nil {
-		panic(err)
-	}
-
-	var fc entities.FridgeConfig
-	if err := json.NewDecoder(buf).Decode(&fc); err != nil {
-		panic("init config decoding has failed")
-	}
-
-	s.Log.Infof("init config: %+v", fc)
-	s.updateConfig(&fc)
-}
-
-func (s *ConfigService) GetConfig() *Configuration {
-	return s.Config
-}
-
-func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfigRequest) (*pb.PatchDevConfigResponse, error) {
-	buf := &bytes.Buffer{}
-	if err := binary.Write(buf, binary.BigEndian, r.Config); err != nil {
-		panic(err)
-	}
-
-	var fc entities.FridgeConfig
-	if err := json.NewDecoder(buf).Decode(&fc); err != nil {
-		panic("config patch decoding has failed")
-	}
-
-	s.Log.Infof("config patch: %+v", fc)
-	s.updateConfig(&fc)
-	return &pb.PatchDevConfigResponse{Status: "OK"}, nil
-}
-
-func (s *ConfigService) updateConfig(nfc *entities.FridgeConfig) {
-	if nfc.TurnedOn && !s.Config.TurnedOn {
-		s.Log.Info("fridge is turned on")
-	} else if !nfc.TurnedOn && s.Config.TurnedOn {
-		s.Log.Info("fridge is turned off")
-	}
-
-	//s.Config.TurnedOn = nfc.TurnedOn
-	s.Config.TurnedOn = true
-	s.Config.CollectFreq = nfc.CollectFreq
-	s.Config.SendFreq = nfc.SendFreq
-
-	s.Config.publishPatchedConfig()
-}
-
-func (c *Configuration) publishPatchedConfig() {
-	for _, v := range c.SubsPool {
-		v <- struct{}{}
-	}
 }
 
 func (c *Configuration) Subscribe(key string, value chan struct{}) {
@@ -154,4 +63,98 @@ func (c *Configuration) SetSendFreq(sf int64) {
 	c.Mutex.Lock()
 	c.SendFreq = sf
 	c.Mutex.Unlock()
+}
+
+type ConfigService struct {
+	Config     *Configuration
+	Center     entities.Server
+	Controller *entities.ServicesController
+	Meta       *entities.DevMeta
+	Log        *logrus.Logger
+}
+
+func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
+	l *logrus.Logger) *ConfigService {
+
+	return &ConfigService{
+		Meta: m,
+		Config: &Configuration{
+			SubsPool: make(map[string]chan struct{}),
+		},
+		Center:     s,
+		Controller: ctrl,
+		Log:        l,
+	}
+}
+
+func (s *ConfigService) SetInitConfig() {
+	pbic := &pb.SetDevInitConfigRequest{
+		Time: time.Now().UnixNano(),
+		Meta: &pb.DevMeta{
+			Type: s.Meta.Type,
+			Name: s.Meta.Name,
+			Mac:  s.Meta.MAC,
+		},
+	}
+
+	conn := dial(s.Center)
+	defer conn.Close()
+
+	client := pb.NewCenterServiceClient(conn)
+	resp, err := client.SetDevInitConfig(context.Background(), pbic)
+	if err != nil {
+		s.Log.Error("SetInitConfig(): SetDevInitConfig() has failed: ", err)
+		panic("init config hasn't been received")
+	}
+
+	buf := &bytes.Buffer{}
+	if err := binary.Write(buf, binary.BigEndian, resp.Config); err != nil {
+		s.Log.Error("SetInitConfig(): Write() has failed: ", err)
+		panic("init config translation to []byte has failed")
+	}
+
+	var fc FridgeConfig
+	if err := json.NewDecoder(buf).Decode(&fc); err != nil {
+		s.Log.Error("SetInitConfig(): Decode() has failed: ", err)
+		panic("init config decoding has failed")
+	}
+
+	s.Log.Infof("init config: %+v", fc)
+	s.updateConfig(&fc)
+}
+
+func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfigRequest) (*pb.PatchDevConfigResponse, error) {
+	buf := &bytes.Buffer{}
+	if err := binary.Write(buf, binary.BigEndian, r.Config); err != nil {
+		s.Log.Error("PatchDevConfig(): Write() has failed: ", err)
+	}
+
+	var fc FridgeConfig
+	if err := json.NewDecoder(buf).Decode(&fc); err != nil {
+		s.Log.Error("PatchDevConfig(): Decode() has failed: ", err)
+	}
+
+	s.Log.Infof("config patch: %+v", fc)
+	s.updateConfig(&fc)
+	return &pb.PatchDevConfigResponse{Status: "OK"}, nil
+}
+
+func (s *ConfigService) updateConfig(nfc *FridgeConfig) {
+	if nfc.TurnedOn && !s.Config.TurnedOn {
+		s.Log.Info("fridge is running")
+	} else if !nfc.TurnedOn && s.Config.TurnedOn {
+		s.Log.Info("fridge is on pause")
+	}
+
+	s.Config.TurnedOn = nfc.TurnedOn
+	s.Config.CollectFreq = nfc.CollectFreq
+	s.Config.SendFreq = nfc.SendFreq
+
+	s.Config.publishConfigIsPatched()
+}
+
+func (c *Configuration) publishConfigIsPatched() {
+	for _, v := range c.SubsPool {
+		v <- struct{}{}
+	}
 }
