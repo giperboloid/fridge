@@ -1,7 +1,7 @@
 syntax = "proto3";
 package pb;
 
-// Run protoc -I pb/ pb/shms.proto --go_out=plugins=grpc:pb
+// Run protoc -I pb/ pb/fridgems.proto --go_out=plugins=grpc:pb
 // to generate fridgems.pb.go
 
 service CenterService {

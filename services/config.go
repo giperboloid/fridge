@@ -75,7 +75,6 @@ type ConfigService struct {
 
 func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
 	l *logrus.Logger) *ConfigService {
-
 	return &ConfigService{
 		Meta: m,
 		Config: &Configuration{
@@ -113,14 +112,7 @@ func (s *ConfigService) SetInitConfig() {
 		panic("init config translation to []byte has failed")
 	}
 
-	var fc FridgeConfig
-	if err := json.NewDecoder(buf).Decode(&fc); err != nil {
-		s.Log.Error("SetInitConfig(): Decode() has failed: ", err)
-		panic("init config decoding has failed")
-	}
-
-	s.Log.Infof("init config: %+v", fc)
-	s.updateConfig(&fc)
+	s.updateConfig(buf)
 }
 
 func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfigRequest) (*pb.PatchDevConfigResponse, error) {
@@ -129,26 +121,17 @@ func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfig
 		s.Log.Error("PatchDevConfig(): Write() has failed: ", err)
 	}
 
-	var fc FridgeConfig
-	if err := json.NewDecoder(buf).Decode(&fc); err != nil {
-		s.Log.Error("PatchDevConfig(): Decode() has failed: ", err)
-	}
-
-	s.Log.Infof("config patch: %+v", fc)
-	s.updateConfig(&fc)
+	s.updateConfig(buf)
 	return &pb.PatchDevConfigResponse{Status: "OK"}, nil
 }
 
-func (s *ConfigService) updateConfig(nfc *FridgeConfig) {
-	if nfc.TurnedOn && !s.Config.TurnedOn {
-		s.Log.Info("fridge is running")
-	} else if !nfc.TurnedOn && s.Config.TurnedOn {
-		s.Log.Info("fridge is on pause")
+func (s *ConfigService) updateConfig(buf *bytes.Buffer) {
+	if err := json.NewDecoder(buf).Decode(&s.Config.FridgeConfig); err != nil {
+		s.Log.Error("updateConfig(): Decode() has failed: ", err)
+		panic("config decoding has failed")
 	}
 
-	s.Config.TurnedOn = nfc.TurnedOn
-	s.Config.CollectFreq = nfc.CollectFreq
-	s.Config.SendFreq = nfc.SendFreq
+	s.Log.Infof("current config: %+v", s.Config.FridgeConfig)
 
 	s.Config.publishConfigIsPatched()
 }

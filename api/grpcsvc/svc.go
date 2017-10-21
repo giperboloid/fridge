@@ -19,11 +19,11 @@ type GRPCConfig struct {
 }
 
 func Init(c GRPCConfig) {
-	s := newFridgeService(c)
+	s := newFridgeServiceGRPC(c)
 	go s.listen()
 }
 
-func newFridgeService(c GRPCConfig) *API{
+func newFridgeServiceGRPC(c GRPCConfig) *API{
 	return &API {
 		Config: c.ConfigService,
 		Reconnect: c.Reconnect,
