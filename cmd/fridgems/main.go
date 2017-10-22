@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	logrus.Infof("fridge is running with name:[%s] and MAC:[%s]", fridgeMeta.Name, fridgeMeta.MAC)
+	logrus.Infof("device type: [%s] name:[%s] MAC:[%s]", fridgeMeta.Type, fridgeMeta.Name, fridgeMeta.MAC)
 
 	ctrl := &entities.ServicesController{
 		StopChan: make(chan struct{},

@@ -126,11 +126,20 @@ func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfig
 }
 
 func (s *ConfigService) updateConfig(buf *bytes.Buffer) {
-	if err := json.NewDecoder(buf).Decode(&s.Config.FridgeConfig); err != nil {
+	var temp = s.Config.FridgeConfig
+	if err := json.NewDecoder(buf).Decode(&temp); err != nil {
 		s.Log.Error("updateConfig(): Decode() has failed: ", err)
 		panic("config decoding has failed")
 	}
 
+	if temp.TurnedOn && !s.Config.TurnedOn {
+		s.Log.Info("fridge is running")
+	} else if !temp.TurnedOn && s.Config.TurnedOn ||
+		!temp.TurnedOn && !s.Config.TurnedOn {
+		s.Log.Info("fridge is on pause")
+	}
+
+	s.Config.FridgeConfig = temp
 	s.Log.Infof("current config: %+v", s.Config.FridgeConfig)
 
 	s.Config.publishConfigIsPatched()

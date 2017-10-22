@@ -278,7 +278,7 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 	client := pb.NewCenterServiceClient(conn)
 	resp, err := client.SaveDevData(context.Background(), pbfr)
 	if err != nil {
-		s.Log.Errorf("saveFridgeData(): SaveDevData() has failed", err)
+		s.Log.Errorf("saveFridgeData(): SaveDevData() has failed: %s", err)
 	}
 	s.Log.Infof("center has received FridgeData with status: %s", resp.Status)
 }
