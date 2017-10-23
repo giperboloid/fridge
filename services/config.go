@@ -96,7 +96,7 @@ func (s *ConfigService) SetInitConfig() {
 		},
 	}
 
-	conn := dial(s.Center)
+	conn := dialCenter(s.Center)
 	defer conn.Close()
 
 	client := pb.NewCenterServiceClient(conn)
@@ -141,7 +141,6 @@ func (s *ConfigService) updateConfig(buf *bytes.Buffer) {
 
 	s.Config.FridgeConfig = temp
 	s.Log.Infof("current config: %+v", s.Config.FridgeConfig)
-
 	s.Config.publishConfigIsPatched()
 }
 

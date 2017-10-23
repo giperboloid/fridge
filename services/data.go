@@ -235,7 +235,7 @@ func (s *DataService) sendData() {
 		}
 	}()
 
-	conn := dial(s.Centerms)
+	conn := dialCenter(s.Centerms)
 	defer conn.Close()
 
 	for {
@@ -283,20 +283,20 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 	s.Log.Infof("center has received FridgeData with status: %s", resp.Status)
 }
 
-func dial(s entities.Server) *grpc.ClientConn {
+func dialCenter(s entities.Server) *grpc.ClientConn {
 	var count int
 	conn, err := grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
 	for err != nil {
 		if count >= 5 {
-			panic("dial(): can't connect to the remote server")
+			panic("dialCenter(): can't connect to the remote server")
 		}
 		time.Sleep(time.Second)
 		conn, err = grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
 		if err != nil {
-			logrus.Printf("dial(): grpc.Dial has failed: %s", err)
+			logrus.Printf("dialCenter(): grpc.Dial has failed: %s", err)
 		}
 		count++
-		logrus.Printf("dial(): reconnect count: %d", count)
+		logrus.Printf("dialCenter(): reconnect count: %d", count)
 	}
 	return conn
 }
