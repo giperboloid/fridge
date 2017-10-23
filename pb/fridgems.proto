@@ -4,6 +4,15 @@ package pb;
 // Run protoc -I pb/ pb/fridgems.proto --go_out=plugins=grpc:pb
 // to generate fridgems.pb.go
 
+// For NATS Publish-Subscribe
+message EventStore {
+    string aggregate_id = 1;
+    string aggregate_type = 2;
+    string event_id = 3;
+    string event_type = 4;
+    string event_data = 5;
+}
+
 service CenterService {
     rpc SetDevInitConfig(SetDevInitConfigRequest) returns (SetDevInitConfigResponse) {}
     rpc SaveDevData(SaveDevDataRequest) returns (SaveDevDataResponse) {}
@@ -30,24 +39,4 @@ message SaveDevDataRequest {
 }
 message SaveDevDataResponse {
     string status = 1;
-}
-
-service DevService {
-    rpc PatchDevConfig(PatchDevConfigRequest) returns (PatchDevConfigResponse) {}
-}
-
-message PatchDevConfigRequest {
-    bytes config = 1;
-}
-message PatchDevConfigResponse {
-    string status = 1;
-}
-
-// For NATS Publish-Subscribe
-message EventStore {
-    string aggregate_id = 1;
-    string aggregate_type = 2;
-    string event_id = 3;
-    string event_type = 4;
-    string event_data = 5;
 }

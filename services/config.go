@@ -8,9 +8,11 @@ import (
 	"encoding/binary"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
 	"github.com/giperboloid/fridgems/pb"
-	"github.com/Sirupsen/logrus"
+	"github.com/golang/protobuf/proto"
+	"github.com/nats-io/go-nats"
 	"golang.org/x/net/context"
 )
 
@@ -115,14 +117,19 @@ func (s *ConfigService) SetInitConfig() {
 	s.updateConfig(buf)
 }
 
-func (s *ConfigService) PatchDevConfig(ctx context.Context, r *pb.PatchDevConfigRequest) (*pb.PatchDevConfigResponse, error) {
-	buf := &bytes.Buffer{}
-	if err := binary.Write(buf, binary.BigEndian, r.Config); err != nil {
-		s.Log.Error("PatchDevConfig(): Write() has failed: ", err)
-	}
+func (s *ConfigService) ListenDevConfig() {
+	conn, _ := nats.Connect(nats.DefaultURL)
+	s.Log.Infof("Connected to " + nats.DefaultURL)
 
-	s.updateConfig(buf)
-	return &pb.PatchDevConfigResponse{Status: "OK"}, nil
+	queue := "Config.ConfigPatchQueue"
+	subject := "Config.Patch." + s.Meta.MAC
+
+	conn.QueueSubscribe(subject, queue, func(msg *nats.Msg) {
+		eventStore := pb.EventStore{}
+		if err := proto.Unmarshal(msg.Data, &eventStore); err == nil {
+			s.updateConfig(bytes.NewBufferString(eventStore.EventData))
+		}
+	})
 }
 
 func (s *ConfigService) updateConfig(buf *bytes.Buffer) {
@@ -134,8 +141,7 @@ func (s *ConfigService) updateConfig(buf *bytes.Buffer) {
 
 	if temp.TurnedOn && !s.Config.TurnedOn {
 		s.Log.Info("fridge is running")
-	} else if !temp.TurnedOn && s.Config.TurnedOn ||
-		!temp.TurnedOn && !s.Config.TurnedOn {
+	} else if !temp.TurnedOn && s.Config.TurnedOn {
 		s.Log.Info("fridge is on pause")
 	}
 

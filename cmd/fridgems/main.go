@@ -1,20 +1,16 @@
 package main
 
 import (
-	"time"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
 	"github.com/giperboloid/fridgems/services"
-	"github.com/giperboloid/fridgems/api/grpcsvc"
 )
 
 func main() {
 	logrus.Infof("device type: [%s] name:[%s] MAC:[%s]", fridgeMeta.Type, fridgeMeta.Name, fridgeMeta.MAC)
 
 	ctrl := &entities.ServicesController{
-		StopChan: make(chan struct{},
-	)}
+		StopChan: make(chan struct{})}
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -34,16 +30,8 @@ func main() {
 	)
 
 	cs.SetInitConfig()
+	go cs.ListenDevConfig()
 	config := cs.Config
-
-	grpcsvc.Init(grpcsvc.GRPCConfig{
-		ConfigService: cs,
-		Reconnect: time.NewTicker(time.Second * 3),
-		Server: entities.Server{
-			Host: fridgeHost,
-			Port: fridgeConfigPort,
-		},
-	})
 
 	ds := services.NewDataService(
 		config,

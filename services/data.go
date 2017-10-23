@@ -38,7 +38,7 @@ type DataService struct {
 	topCompart chan FridgeGenData
 	botCompart chan FridgeGenData
 	ReqChan    chan SaveFridgeDataRequest
-	Centerms   entities.Server
+	Center     entities.Server
 	Log        *logrus.Logger
 }
 
@@ -49,7 +49,7 @@ func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ct
 		ReqChan:    make(chan SaveFridgeDataRequest),
 		Config:     c,
 		Meta:       m,
-		Centerms:   s,
+		Center:     s,
 		Controller: ctrl,
 		Log:        l,
 	}
@@ -235,7 +235,7 @@ func (s *DataService) sendData() {
 		}
 	}()
 
-	conn := dialCenter(s.Centerms)
+	conn := dialCenter(s.Center)
 	defer conn.Close()
 
 	for {
