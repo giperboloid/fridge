@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"math/rand"
 	"sync"
 
 	"bytes"
@@ -14,6 +15,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/go-nats"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/connectivity"
 )
 
 type FridgeConfig struct {
@@ -68,28 +70,35 @@ func (c *Configuration) SetSendFreq(sf int64) {
 }
 
 type ConfigService struct {
-	Config     *Configuration
-	Center     entities.Server
-	Controller *entities.ServicesController
-	Meta       *entities.DevMeta
-	Log        *logrus.Logger
+	Config         *Configuration
+	Center         entities.Server
+	Controller     *entities.ServicesController
+	Meta           *entities.DevMeta
+	Log            *logrus.Logger
+	ReconnInterval time.Duration
 }
 
 func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
-	l *logrus.Logger) *ConfigService {
+	l *logrus.Logger, reconn time.Duration) *ConfigService {
 	return &ConfigService{
 		Meta: m,
 		Config: &Configuration{
 			SubsPool: make(map[string]chan struct{}),
 		},
-		Center:     s,
-		Controller: ctrl,
-		Log:        l,
+		Center:         s,
+		Controller:     ctrl,
+		Log:            l,
+		ReconnInterval: reconn,
 	}
 }
 
-func (s *ConfigService) SetInitConfig() {
-	pbic := &pb.SetDevInitConfigRequest{
+func (s *ConfigService) Run() {
+	s.setInitConfig()
+	go s.listenConfigPatch()
+}
+
+func (s *ConfigService) setInitConfig() {
+	req := &pb.SetDevInitConfigRequest{
 		Time: time.Now().UnixNano(),
 		Meta: &pb.DevMeta{
 			Type: s.Meta.Type,
@@ -98,28 +107,44 @@ func (s *ConfigService) SetInitConfig() {
 		},
 	}
 
-	conn := dialCenter(s.Center)
+	conn := dial(s.Center, s.Log)
 	defer conn.Close()
 
 	client := pb.NewCenterServiceClient(conn)
-	resp, err := client.SetDevInitConfig(context.Background(), pbic)
+	for conn.GetState() != connectivity.Ready {
+		s.Log.Error("ConfigService: setInitConfig(): connectivity with center isn't ready yet")
+		duration := time.Duration(rand.Intn(int(s.ReconnInterval.Seconds())))
+		time.Sleep(time.Second * duration + 1)
+	}
+
+	resp, err := client.SetDevInitConfig(context.Background(), req)
 	if err != nil {
-		s.Log.Error("SetInitConfig(): SetDevInitConfig() has failed: ", err)
+		s.Log.Error("ConfigService: setInitConfig(): SetDevInitConfig() has failed: ", err)
 		panic("init config hasn't been received")
 	}
 
 	buf := &bytes.Buffer{}
 	if err := binary.Write(buf, binary.BigEndian, resp.Config); err != nil {
-		s.Log.Error("SetInitConfig(): Write() has failed: ", err)
+		s.Log.Error("ConfigService: setInitConfig(): Write() has failed: ", err)
 		panic("init config translation to []byte has failed")
 	}
 
 	s.updateConfig(buf)
 }
 
-func (s *ConfigService) ListenDevConfig() {
-	conn, _ := nats.Connect(nats.DefaultURL)
-	s.Log.Infof("Connected to " + nats.DefaultURL)
+func (s *ConfigService) listenConfigPatch() {
+	defer func() {
+		if r := recover(); r != nil {
+			s.Log.Errorf("ConfigService: listenConfigPatch(): panic(): %s", r)
+			s.Controller.Terminate()
+		}
+	}()
+
+	conn, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		panic("connection with nats hasn't been established")
+	}
+	s.Log.Infof("connected to " + nats.DefaultURL)
 
 	queue := "Config.ConfigPatchQueue"
 	subject := "Config.Patch." + s.Meta.MAC
@@ -135,7 +160,7 @@ func (s *ConfigService) ListenDevConfig() {
 func (s *ConfigService) updateConfig(buf *bytes.Buffer) {
 	var temp = s.Config.FridgeConfig
 	if err := json.NewDecoder(buf).Decode(&temp); err != nil {
-		s.Log.Error("updateConfig(): Decode() has failed: ", err)
+		s.Log.Error("ConfigService: updateConfig(): Decode() has failed: ", err)
 		panic("config decoding has failed")
 	}
 

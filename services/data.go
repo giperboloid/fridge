@@ -13,11 +13,12 @@ import (
 	"github.com/giperboloid/fridgems/entities"
 	"github.com/giperboloid/fridgems/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 )
 
 type FridgeData struct {
-	TempTopCompart map[int64]float32
-	TempBotCompart map[int64]float32
+	TopCompart map[int64]float32
+	BotCompart map[int64]float32
 }
 
 type SaveFridgeDataRequest struct {
@@ -35,8 +36,8 @@ type DataService struct {
 	Config     *Configuration
 	Meta       *entities.DevMeta
 	Controller *entities.ServicesController
-	topCompart chan FridgeGenData
-	botCompart chan FridgeGenData
+	TopCompart chan FridgeGenData
+	BotCompart chan FridgeGenData
 	ReqChan    chan SaveFridgeDataRequest
 	Center     entities.Server
 	Log        *logrus.Logger
@@ -44,8 +45,8 @@ type DataService struct {
 
 func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController, l *logrus.Logger) *DataService {
 	return &DataService{
-		topCompart: make(chan FridgeGenData, 100),
-		botCompart: make(chan FridgeGenData, 100),
+		TopCompart: make(chan FridgeGenData, 100),
+		BotCompart: make(chan FridgeGenData, 100),
 		ReqChan:    make(chan SaveFridgeDataRequest),
 		Config:     c,
 		Meta:       m,
@@ -64,7 +65,7 @@ func (s *DataService) Run() {
 func (s *DataService) generateData() {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Log.Errorf("generateData(): panic(): %s", r)
+			s.Log.Errorf("DataService: generateData(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
@@ -73,16 +74,16 @@ func (s *DataService) generateData() {
 	ticker := time.NewTicker(time.Duration(duration) * time.Millisecond)
 	stopInner := make(chan struct{})
 
-	configChanged := make(chan struct{})
-	s.Config.Subscribe("dataGenerator", configChanged)
+	configIsPatched := make(chan struct{})
+	s.Config.Subscribe("dataGenerator", configIsPatched)
 
 	if s.Config.GetTurnedOn() {
-		go s.dataGenerator(ticker, s.botCompart, s.topCompart, stopInner)
+		go s.dataGenerator(ticker, s.TopCompart, s.BotCompart, stopInner)
 	}
 
 	for {
 		select {
-		case <-configChanged:
+		case <-configIsPatched:
 			state := s.Config.GetTurnedOn()
 			switch state {
 			case true:
@@ -90,13 +91,13 @@ func (s *DataService) generateData() {
 				case <-stopInner:
 					stopInner = make(chan struct{})
 					ticker = time.NewTicker(time.Duration(s.Config.GetCollectFreq()) * time.Millisecond)
-					go s.dataGenerator(ticker, s.botCompart, s.topCompart, stopInner)
+					go s.dataGenerator(ticker, s.TopCompart, s.BotCompart, stopInner)
 				default:
 					close(stopInner)
 					ticker.Stop()
 					stopInner = make(chan struct{})
 					ticker = time.NewTicker(time.Duration(s.Config.GetCollectFreq()) * time.Millisecond)
-					go s.dataGenerator(ticker, s.botCompart, s.topCompart, stopInner)
+					go s.dataGenerator(ticker, s.TopCompart, s.BotCompart, stopInner)
 				}
 			case false:
 				select {
@@ -107,17 +108,17 @@ func (s *DataService) generateData() {
 				}
 			}
 		case <-s.Controller.StopChan:
-			s.Log.Error("data generation has stopped")
+			s.Log.Info("data generation has stopped")
 			return
 		}
 	}
 }
 
-func (s *DataService) dataGenerator(t *time.Ticker, cBot chan<- FridgeGenData, cTop chan<- FridgeGenData,
+func (s *DataService) dataGenerator(t *time.Ticker, topCompart chan<- FridgeGenData, botCompart chan<- FridgeGenData,
 	stopInner chan struct{}) {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Log.Errorf("dataGenerator(): panic(): %s", r)
+			s.Log.Errorf("DataService: dataGenerator(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
@@ -125,8 +126,8 @@ func (s *DataService) dataGenerator(t *time.Ticker, cBot chan<- FridgeGenData, c
 	for {
 		select {
 		case <-t.C:
-			cTop <- FridgeGenData{Time: currentTimestamp(), Data: rand.Float32() * 10}
-			cBot <- FridgeGenData{Time: currentTimestamp(), Data: (rand.Float32() * 10) - 8}
+			topCompart <- FridgeGenData{Time: currentTimestamp(), Data: rand.Float32() * 10}
+			botCompart <- FridgeGenData{Time: currentTimestamp(), Data: (rand.Float32() * 10) - 8}
 		case <-stopInner:
 			return
 		}
@@ -140,7 +141,7 @@ func currentTimestamp() int64 {
 func (s *DataService) collectData() {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Log.Errorf("collectData(): panic(): %s", r)
+			s.Log.Errorf("DataService: collectData(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
@@ -149,16 +150,16 @@ func (s *DataService) collectData() {
 	stopInner := make(chan struct{})
 	ticker := time.NewTicker(time.Duration(duration) * time.Millisecond)
 
-	configIsChanged := make(chan struct{})
-	s.Config.Subscribe("dataCollection", configIsChanged)
+	configIsPatched := make(chan struct{})
+	s.Config.Subscribe("dataCollection", configIsPatched)
 
 	if s.Config.GetTurnedOn() {
-		go s.dataCollector(ticker, s.botCompart, s.topCompart, s.ReqChan, stopInner)
+		go s.dataCollector(ticker, s.TopCompart, s.BotCompart, s.ReqChan, stopInner)
 	}
 
 	for {
 		select {
-		case <-configIsChanged:
+		case <-configIsPatched:
 			state := s.Config.GetTurnedOn()
 			switch state {
 			case true:
@@ -166,12 +167,12 @@ func (s *DataService) collectData() {
 				case <-stopInner:
 					stopInner = make(chan struct{})
 					ticker = time.NewTicker(time.Duration(s.Config.GetSendFreq()) * time.Millisecond)
-					go s.dataCollector(ticker, s.botCompart, s.topCompart, s.ReqChan, stopInner)
+					go s.dataCollector(ticker, s.TopCompart, s.BotCompart, s.ReqChan, stopInner)
 				default:
 					close(stopInner)
 					stopInner = make(chan struct{})
 					ticker = time.NewTicker(time.Duration(s.Config.GetSendFreq()) * time.Millisecond)
-					go s.dataCollector(ticker, s.botCompart, s.topCompart, s.ReqChan, stopInner)
+					go s.dataCollector(ticker, s.TopCompart, s.BotCompart, s.ReqChan, stopInner)
 				}
 			case false:
 				select {
@@ -182,47 +183,47 @@ func (s *DataService) collectData() {
 				}
 			}
 		case <-s.Controller.StopChan:
-			s.Log.Error("data collection has stopped")
+			s.Log.Info("data collection has stopped")
 			return
 		}
 	}
 }
 
-func (s *DataService) dataCollector(t *time.Ticker, cBot <-chan FridgeGenData, cTop <-chan FridgeGenData,
+func (s *DataService) dataCollector(t *time.Ticker, topCompart <-chan FridgeGenData, botCompart <-chan FridgeGenData,
 	ReqChan chan SaveFridgeDataRequest, stopInner chan struct{}) {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Log.Errorf("dataCollector(): panic(): %s", r)
+			s.Log.Errorf("DataService: dataCollector(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
 
-	var mTop = make(map[int64]float32)
-	var mBot = make(map[int64]float32)
+	var timeTempTopCompart = make(map[int64]float32)
+	var timeTempBotCompart = make(map[int64]float32)
 
 	for {
 		select {
-		case tv := <-cTop:
-			mTop[tv.Time] = tv.Data
-		case bv := <-cBot:
-			mBot[bv.Time] = bv.Data
+		case t := <-topCompart:
+			timeTempTopCompart[t.Time] = t.Data
+		case b := <-botCompart:
+			timeTempBotCompart[b.Time] = b.Data
 		case <-t.C:
-			ReqChan <- s.createFridgeRequest(mTop, mBot)
-			mTop = make(map[int64]float32)
-			mBot = make(map[int64]float32)
+			ReqChan <- s.newSaveFridgeDataRequest(timeTempTopCompart, timeTempBotCompart)
+			timeTempTopCompart = make(map[int64]float32)
+			timeTempBotCompart = make(map[int64]float32)
 		case <-stopInner:
 			return
 		}
 	}
 }
 
-func (s *DataService) createFridgeRequest(tempTopCompart map[int64]float32, tempBotCompart map[int64]float32) SaveFridgeDataRequest {
+func (s *DataService) newSaveFridgeDataRequest(topCompart map[int64]float32, botCompart map[int64]float32) SaveFridgeDataRequest {
 	return SaveFridgeDataRequest{
 		Time: time.Now().UnixNano(),
 		Meta: *s.Meta,
 		Data: FridgeData{
-			TempTopCompart: tempTopCompart,
-			TempBotCompart: tempBotCompart,
+			TopCompart: topCompart,
+			BotCompart: botCompart,
 		},
 	}
 }
@@ -230,12 +231,12 @@ func (s *DataService) createFridgeRequest(tempTopCompart map[int64]float32, temp
 func (s *DataService) sendData() {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Log.Errorf("sendData(): panic(): %s", r)
+			s.Log.Errorf("DataService: sendData(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
 
-	conn := dialCenter(s.Center)
+	conn := dial(s.Center, s.Log)
 	defer conn.Close()
 
 	for {
@@ -252,7 +253,7 @@ func (s *DataService) sendData() {
 func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.ClientConn) {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Log.Errorf("saveFridgeData(): panic(): %s", r)
+			s.Log.Errorf("DataService: saveFridgeData(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
@@ -261,11 +262,11 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(fr.Data); err != nil {
-		s.Log.Errorf("saveFridgeData(): Encode() has failed: %s", err)
+		s.Log.Errorf("DataService: saveFridgeData(): Encode() has failed: %s", err)
 		panic("FridgeData can't be encoded for sending")
 	}
 
-	pbfr := &pb.SaveDevDataRequest{
+	req := &pb.SaveDevDataRequest{
 		Time: fr.Time,
 		Meta: &pb.DevMeta{
 			Type: fr.Meta.Type,
@@ -276,27 +277,33 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 	}
 
 	client := pb.NewCenterServiceClient(conn)
-	resp, err := client.SaveDevData(context.Background(), pbfr)
+	for conn.GetState() != connectivity.Ready {
+		s.Log.Error("DataService: saveFridgeData(): connectivity with center isn't ready yet")
+		duration := time.Duration(rand.Intn(int(s.ReconnInterval.Seconds())))
+		time.Sleep(time.Second * duration + 1)
+	}
+
+	resp, err := client.SaveDevData(context.Background(), req)
 	if err != nil {
-		s.Log.Errorf("saveFridgeData(): SaveDevData() has failed: %s", err)
+		s.Log.Errorf("DataService: saveFridgeData(): SaveDevData() has failed: %s", err)
 	}
 	s.Log.Infof("center has received FridgeData with status: %s", resp.Status)
 }
 
-func dialCenter(s entities.Server) *grpc.ClientConn {
+func dial(s entities.Server, l *logrus.Logger) *grpc.ClientConn {
 	var count int
 	conn, err := grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
 	for err != nil {
 		if count >= 5 {
-			panic("dialCenter(): can't connect to the remote server")
+			panic("dial(): can't connect to the remote server")
 		}
 		time.Sleep(time.Second)
 		conn, err = grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
 		if err != nil {
-			logrus.Printf("dialCenter(): grpc.Dial has failed: %s", err)
+			l.Errorf("dial(): grpc.Dial has failed: %s", err)
 		}
 		count++
-		logrus.Printf("dialCenter(): reconnect count: %d", count)
+		l.Infof("dial(): reconnect count: %d", count)
 	}
 	return conn
 }

@@ -3,7 +3,16 @@ package main
 import (
 	"os"
 
+	"time"
+
 	"github.com/giperboloid/fridgems/entities"
+)
+
+const (
+	localhost               = "127.0.0.1"
+	defaultCenterConfigPort = "3092"
+	defaultCenterDataPort   = "3126"
+	ReconnInterval          = time.Second * 10
 )
 
 var (
@@ -12,13 +21,9 @@ var (
 		Name: getDevName(),
 		MAC:  getDevMAC(),
 	}
-
-	fridgeHost       = getEnvServerHost("FRIDGE_TCP_ADDR")
-	fridgeConfigPort = "4040"
-
-	centerHost       = getEnvServerHost("CENTER_TCP_ADDR")
-	centerDataPort   = getEnvCenterDataPort("CENTER_DATA_PORT")
-	centerConfigPort = getEnvCenterConfigPort("CENTER_CONFIG_PORT")
+	centerHost       = getEnvVar("CENTER_TCP_ADDR", localhost)
+	centerDataPort   = getEnvVar("CENTER_DATA_TCP_PORT", defaultCenterDataPort)
+	centerConfigPort = getEnvVar("CENTER_CONFIG_TCP_PORT", defaultCenterConfigPort)
 )
 
 func getDevName() string {
@@ -37,26 +42,10 @@ func getDevMAC() string {
 	return args[1]
 }
 
-func getEnvServerHost(key string) string {
-	host := os.Getenv(key)
-	if len(host) == 0 {
-		return "127.0.0.1"
+func getEnvVar(key string, defaultVal string) string {
+	val := os.Getenv(key)
+	if len(val) == 0 {
+		return defaultVal
 	}
-	return host
-}
-
-func getEnvCenterDataPort(key string) string {
-	host := os.Getenv(key)
-	if len(host) == 0 {
-		return "3030"
-	}
-	return host
-}
-
-func getEnvCenterConfigPort(key string) string {
-	host := os.Getenv(key)
-	if len(host) == 0 {
-		return "3000"
-	}
-	return host
+	return val
 }

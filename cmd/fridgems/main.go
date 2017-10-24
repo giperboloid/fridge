@@ -10,7 +10,8 @@ func main() {
 	logrus.Infof("device type: [%s] name:[%s] MAC:[%s]", fridgeMeta.Type, fridgeMeta.Name, fridgeMeta.MAC)
 
 	ctrl := &entities.ServicesController{
-		StopChan: make(chan struct{})}
+		StopChan: make(chan struct{}),
+	}
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -27,14 +28,12 @@ func main() {
 		},
 		ctrl,
 		logrus.New(),
+		ReconnInterval,
 	)
-
-	cs.SetInitConfig()
-	go cs.ListenDevConfig()
-	config := cs.Config
+	cs.Run()
 
 	ds := services.NewDataService(
-		config,
+		cs.Config,
 		&fridgeMeta,
 		entities.Server{
 			Host: centerHost,
@@ -42,6 +41,7 @@ func main() {
 		},
 		ctrl,
 		logrus.New(),
+		ReconnInterval,
 	)
 	ds.Run()
 
