@@ -107,14 +107,14 @@ func (s *ConfigService) setInitConfig() {
 		},
 	}
 
-	conn := dial(s.Center, s.Log)
+	conn := dial(s.Center, s.Log, s.ReconnInterval)
 	defer conn.Close()
 
 	client := pb.NewCenterServiceClient(conn)
 	for conn.GetState() != connectivity.Ready {
-		s.Log.Error("ConfigService: setInitConfig(): connectivity with center isn't ready yet")
+		s.Log.Error("ConfigService: setInitConfig(): center connectivity status: NOT READY")
 		duration := time.Duration(rand.Intn(int(s.ReconnInterval.Seconds())))
-		time.Sleep(time.Second * duration + 1)
+		time.Sleep(time.Second*duration + 1)
 	}
 
 	resp, err := client.SetDevInitConfig(context.Background(), req)
@@ -141,9 +141,13 @@ func (s *ConfigService) listenConfigPatch() {
 	}()
 
 	conn, err := nats.Connect(nats.DefaultURL)
-	if err != nil {
-		panic("connection with nats hasn't been established")
+	for err != nil {
+		s.Log.Error("ConfigService: listenConfigPatch(): nats connectivity status: DISCONNECTED")
+		duration := time.Duration(rand.Intn(int(s.ReconnInterval.Seconds())))
+		time.Sleep(time.Second*duration + 1)
+		conn, err = nats.Connect(nats.DefaultURL)
 	}
+
 	s.Log.Infof("connected to " + nats.DefaultURL)
 
 	queue := "Config.ConfigPatchQueue"

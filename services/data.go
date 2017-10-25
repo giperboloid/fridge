@@ -33,26 +33,29 @@ type FridgeGenData struct {
 }
 
 type DataService struct {
-	Config     *Configuration
-	Meta       *entities.DevMeta
-	Controller *entities.ServicesController
-	TopCompart chan FridgeGenData
-	BotCompart chan FridgeGenData
-	ReqChan    chan SaveFridgeDataRequest
-	Center     entities.Server
-	Log        *logrus.Logger
+	Config         *Configuration
+	Meta           *entities.DevMeta
+	Controller     *entities.ServicesController
+	TopCompart     chan FridgeGenData
+	BotCompart     chan FridgeGenData
+	ReqChan        chan SaveFridgeDataRequest
+	Center         entities.Server
+	Log            *logrus.Logger
+	ReconnInterval time.Duration
 }
 
-func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController, l *logrus.Logger) *DataService {
+func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
+	l *logrus.Logger, reconn time.Duration) *DataService {
 	return &DataService{
-		TopCompart: make(chan FridgeGenData, 100),
-		BotCompart: make(chan FridgeGenData, 100),
-		ReqChan:    make(chan SaveFridgeDataRequest),
-		Config:     c,
-		Meta:       m,
-		Center:     s,
-		Controller: ctrl,
-		Log:        l,
+		TopCompart:     make(chan FridgeGenData, 100),
+		BotCompart:     make(chan FridgeGenData, 100),
+		ReqChan:        make(chan SaveFridgeDataRequest),
+		Config:         c,
+		Meta:           m,
+		Center:         s,
+		Controller:     ctrl,
+		Log:            l,
+		ReconnInterval: reconn,
 	}
 }
 
@@ -236,7 +239,7 @@ func (s *DataService) sendData() {
 		}
 	}()
 
-	conn := dial(s.Center, s.Log)
+	conn := dial(s.Center, s.Log, s.ReconnInterval)
 	defer conn.Close()
 
 	for {
@@ -278,9 +281,9 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 
 	client := pb.NewCenterServiceClient(conn)
 	for conn.GetState() != connectivity.Ready {
-		s.Log.Error("DataService: saveFridgeData(): connectivity with center isn't ready yet")
+		s.Log.Error("DataService: saveFridgeData(): center connectivity status: NOT READY")
 		duration := time.Duration(rand.Intn(int(s.ReconnInterval.Seconds())))
-		time.Sleep(time.Second * duration + 1)
+		time.Sleep(time.Second*duration + 1)
 	}
 
 	resp, err := client.SaveDevData(context.Background(), req)
@@ -290,20 +293,13 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 	s.Log.Infof("center has received FridgeData with status: %s", resp.Status)
 }
 
-func dial(s entities.Server, l *logrus.Logger) *grpc.ClientConn {
-	var count int
+func dial(s entities.Server, l *logrus.Logger, reconnInterval time.Duration) *grpc.ClientConn {
 	conn, err := grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
 	for err != nil {
-		if count >= 5 {
-			panic("dial(): can't connect to the remote server")
-		}
-		time.Sleep(time.Second)
+		l.Error("dial(): grpc.Dial(): failed to dial remote server")
+		duration := time.Duration(rand.Intn(int(reconnInterval.Seconds())))
+		time.Sleep(time.Second*duration + 1)
 		conn, err = grpc.Dial(s.Host+":"+s.Port, grpc.WithInsecure())
-		if err != nil {
-			l.Errorf("dial(): grpc.Dial has failed: %s", err)
-		}
-		count++
-		l.Infof("dial(): reconnect count: %d", count)
 	}
 	return conn
 }
