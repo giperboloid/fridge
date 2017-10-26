@@ -25,26 +25,30 @@ type FridgeData struct {
 }
 
 // SaveFridgeDataRequest is used to store unix timestamp as a
-// time request was prepared, device metadata and collected data
-// for that moment.
+// time marker, when request was prepared, device metadata
+// and collected data for that moment.
 type SaveFridgeDataRequest struct {
 	Time int64
 	Meta entities.DevMeta
 	Data FridgeData
 }
 
-
-type FridgeGenData struct {
+// FridgeDatum is used to represent a pair of unix timestamp and
+// temperature.
+type FridgeDatum struct {
 	Time int64
-	Data float32
+	Temp float32
 }
 
+// DataService is used to handle device's data manipulations.
+// TopCompart channel receives generated data for the first
+// compartment, and BotCompart - for the second one.
 type DataService struct {
 	Config         *Configuration
 	Meta           *entities.DevMeta
 	Controller     *entities.ServicesController
-	TopCompart     chan FridgeGenData
-	BotCompart     chan FridgeGenData
+	TopCompart     chan FridgeDatum
+	BotCompart     chan FridgeDatum
 	ReqChan        chan SaveFridgeDataRequest
 	Center         entities.Server
 	Log            *logrus.Logger
@@ -56,8 +60,8 @@ type DataService struct {
 func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
 	l *logrus.Logger, reconn time.Duration) *DataService {
 	return &DataService{
-		TopCompart:     make(chan FridgeGenData, 100),
-		BotCompart:     make(chan FridgeGenData, 100),
+		TopCompart:     make(chan FridgeDatum, 100),
+		BotCompart:     make(chan FridgeDatum, 100),
 		ReqChan:        make(chan SaveFridgeDataRequest),
 		Config:         c,
 		Meta:           m,
@@ -128,7 +132,7 @@ func (s *DataService) generateData() {
 	}
 }
 
-func (s *DataService) dataGenerator(t *time.Ticker, topCompart chan<- FridgeGenData, botCompart chan<- FridgeGenData,
+func (s *DataService) dataGenerator(t *time.Ticker, topCompart chan<- FridgeDatum, botCompart chan<- FridgeDatum,
 	stopInner chan struct{}) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -140,8 +144,8 @@ func (s *DataService) dataGenerator(t *time.Ticker, topCompart chan<- FridgeGenD
 	for {
 		select {
 		case <-t.C:
-			topCompart <- FridgeGenData{Time: currentTimestamp(), Data: rand.Float32() * 10}
-			botCompart <- FridgeGenData{Time: currentTimestamp(), Data: (rand.Float32() * 10) - 8}
+			topCompart <- FridgeDatum{Time: currentTimestamp(), Temp: rand.Float32() * 10}
+			botCompart <- FridgeDatum{Time: currentTimestamp(), Temp: (rand.Float32() * 10) - 8}
 		case <-stopInner:
 			return
 		}
@@ -165,7 +169,7 @@ func (s *DataService) collectData() {
 	ticker := time.NewTicker(time.Duration(duration) * time.Millisecond)
 
 	configIsPatched := make(chan struct{})
-	s.Config.Subscribe("dataCollection", configIsPatched)
+	s.Config.Subscribe("dataCollector", configIsPatched)
 
 	if s.Config.GetTurnedOn() {
 		go s.dataCollector(ticker, s.TopCompart, s.BotCompart, s.ReqChan, stopInner)
@@ -203,7 +207,7 @@ func (s *DataService) collectData() {
 	}
 }
 
-func (s *DataService) dataCollector(t *time.Ticker, topCompart <-chan FridgeGenData, botCompart <-chan FridgeGenData,
+func (s *DataService) dataCollector(t *time.Ticker, topCompart <-chan FridgeDatum, botCompart <-chan FridgeDatum,
 	ReqChan chan SaveFridgeDataRequest, stopInner chan struct{}) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -218,9 +222,9 @@ func (s *DataService) dataCollector(t *time.Ticker, topCompart <-chan FridgeGenD
 	for {
 		select {
 		case t := <-topCompart:
-			timeTempTopCompart[t.Time] = t.Data
+			timeTempTopCompart[t.Time] = t.Temp
 		case b := <-botCompart:
-			timeTempBotCompart[b.Time] = b.Data
+			timeTempBotCompart[b.Time] = b.Temp
 		case <-t.C:
 			ReqChan <- s.newSaveFridgeDataRequest(timeTempTopCompart, timeTempBotCompart)
 			timeTempTopCompart = make(map[int64]float32)

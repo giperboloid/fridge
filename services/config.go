@@ -30,51 +30,56 @@ type FridgeConfig struct {
 	SendFreq    int64
 }
 
+// Configuration is used to store fridge's configuration and to
+// handle its subscribers.
 type Configuration struct {
-	sync.Mutex
+	sync.RWMutex
 	FridgeConfig
 	SubsPool map[string]chan struct{}
 }
 
-func (c *Configuration) Subscribe(key string, value chan struct{}) {
-	c.Mutex.Lock()
-	c.SubsPool[key] = value
-	c.Mutex.Unlock()
+// Subscribe subscribes clients to configuration patches.
+func (c *Configuration) Subscribe(subscriber string, ch chan struct{}) {
+	c.RWMutex.Lock()
+	c.SubsPool[subscriber] = ch
+	c.RWMutex.Unlock()
 }
 
 func (c *Configuration) GetTurnedOn() bool {
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
+	c.RWMutex.RLock()
+	defer c.RWMutex.RUnlock()
 	return c.TurnedOn
 }
-func (c *Configuration) SetTurnedOn(b bool) {
-	c.Mutex.Lock()
-	c.TurnedOn = b
-	c.Mutex.Unlock()
+func (c *Configuration) SetTurnedOn(turnedOn bool) {
+	c.RWMutex.Lock()
+	c.TurnedOn = turnedOn
+	c.RWMutex.Unlock()
 }
 
 func (c *Configuration) GetCollectFreq() int64 {
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
+	c.RWMutex.RLock()
+	defer c.RWMutex.RUnlock()
 	return c.CollectFreq
 }
-func (c *Configuration) SetCollectFreq(cf int64) {
-	c.Mutex.Lock()
-	c.CollectFreq = cf
-	c.Mutex.Unlock()
+func (c *Configuration) SetCollectFreq(collectFreq int64) {
+	c.RWMutex.Lock()
+	c.CollectFreq = collectFreq
+	c.RWMutex.Unlock()
 }
 
 func (c *Configuration) GetSendFreq() int64 {
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
+	c.RWMutex.RLock()
+	defer c.RWMutex.RUnlock()
 	return c.SendFreq
 }
-func (c *Configuration) SetSendFreq(sf int64) {
-	c.Mutex.Lock()
-	c.SendFreq = sf
-	c.Mutex.Unlock()
+func (c *Configuration) SetSendFreq(sendFreq int64) {
+	c.RWMutex.Lock()
+	c.SendFreq = sendFreq
+	c.RWMutex.Unlock()
 }
 
+// ConfigService is used to handle device's configuration parameters
+// manipulation.
 type ConfigService struct {
 	Config         *Configuration
 	Center         entities.Server
