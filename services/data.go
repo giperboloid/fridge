@@ -16,16 +16,23 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
+// FridgeData is used to store maps for each of the two
+// compartments with unix timestamp as a key and temperature
+// at that time as a value.
 type FridgeData struct {
 	TopCompart map[int64]float32
 	BotCompart map[int64]float32
 }
 
+// SaveFridgeDataRequest is used to store unix timestamp as a
+// time request was prepared, device metadata and collected data
+// for that moment.
 type SaveFridgeDataRequest struct {
 	Time int64
 	Meta entities.DevMeta
 	Data FridgeData
 }
+
 
 type FridgeGenData struct {
 	Time int64
@@ -44,6 +51,8 @@ type DataService struct {
 	ReconnInterval time.Duration
 }
 
+// NewDataService creates and initializes new DataService object.
+// It returns initialized object.
 func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
 	l *logrus.Logger, reconn time.Duration) *DataService {
 	return &DataService{
@@ -59,6 +68,8 @@ func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ct
 	}
 }
 
+// Run runs the service's inner goroutines for data generation,
+// collection and sending to the center.
 func (s *DataService) Run() {
 	go s.generateData()
 	go s.collectData()

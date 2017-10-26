@@ -1,3 +1,5 @@
+// Package services provides two services for device configuration
+// and data handling.
 package services
 
 import (
@@ -18,6 +20,10 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
+// FridgeConfig is used to store fridge configuration.
+// TurnedOn    specifies whether device is on or off.
+// CollectFreq specifies frequency for data collection on device.
+// SendFreq    specifies frequency for sending data from device to center.
 type FridgeConfig struct {
 	TurnedOn    bool
 	CollectFreq int64
@@ -78,6 +84,8 @@ type ConfigService struct {
 	ReconnInterval time.Duration
 }
 
+// NewConfigService creates and initializes new ConfigService object.
+// It returns initialized object.
 func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
 	l *logrus.Logger, reconn time.Duration) *ConfigService {
 	return &ConfigService{
@@ -92,6 +100,8 @@ func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.Ser
 	}
 }
 
+// Run sets initial device configuration and listens
+// for configuration patches from the center.
 func (s *ConfigService) Run() {
 	s.setInitConfig()
 	go s.listenConfigPatch()

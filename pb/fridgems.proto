@@ -4,7 +4,7 @@ package pb;
 // Run protoc -I pb/ pb/fridgems.proto --go_out=plugins=grpc:pb
 // to generate fridgems.pb.go
 
-// For NATS Publish-Subscribe
+// EventStore is for NATS pub/sub
 message EventStore {
     string aggregate_id = 1;
     string aggregate_type = 2;

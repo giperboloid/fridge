@@ -28,7 +28,7 @@ func main() {
 		},
 		ctrl,
 		logrus.New(),
-		ReconnInterval,
+		reconnInterval,
 	)
 	cs.Run()
 
@@ -41,7 +41,7 @@ func main() {
 		},
 		ctrl,
 		logrus.New(),
-		ReconnInterval,
+		reconnInterval,
 	)
 	ds.Run()
 
