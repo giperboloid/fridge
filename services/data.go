@@ -58,7 +58,7 @@ type DataService struct {
 // NewDataService creates and initializes new DataService object.
 // It returns initialized object.
 func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
-	l *logrus.Logger, reconn time.Duration) *DataService {
+	l *logrus.Logger, r time.Duration) *DataService {
 	return &DataService{
 		TopCompart:     make(chan FridgeDatum, 100),
 		BotCompart:     make(chan FridgeDatum, 100),
@@ -68,7 +68,7 @@ func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ct
 		Center:         s,
 		Controller:     ctrl,
 		Log:            l,
-		ReconnInterval: reconn,
+		ReconnInterval: r,
 	}
 }
 

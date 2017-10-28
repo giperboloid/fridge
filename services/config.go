@@ -45,33 +45,66 @@ func (c *Configuration) Subscribe(subscriber string, ch chan struct{}) {
 	c.RWMutex.Unlock()
 }
 
+// PublishConfigIsPatched notifies all the subscribers about
+// new configuration patch.
+func (c *Configuration) publishConfigIsPatched() {
+	c.RWMutex.RLock()
+	for _, v := range c.SubsPool {
+		v <- struct{}{}
+	}
+	c.RWMutex.RUnlock()
+}
+
+// GetFridgeConfig returns value of FridgeConfig field.
+func (c *Configuration) GetFridgeConfig() FridgeConfig {
+	c.RWMutex.RLock()
+	defer c.RWMutex.RUnlock()
+	return c.FridgeConfig
+}
+
+// SetFridgeConfig sets value for FridgeConfig field.
+func (c *Configuration) SetFridgeConfig(fc FridgeConfig) {
+	c.RWMutex.Lock()
+	c.FridgeConfig = fc
+	c.RWMutex.Unlock()
+}
+
+// GetTurnedOn returns value of TurnedOn field.
 func (c *Configuration) GetTurnedOn() bool {
 	c.RWMutex.RLock()
 	defer c.RWMutex.RUnlock()
 	return c.TurnedOn
 }
+
+// SetTurnedOn sets value for TurnedOn field.
 func (c *Configuration) SetTurnedOn(turnedOn bool) {
 	c.RWMutex.Lock()
 	c.TurnedOn = turnedOn
 	c.RWMutex.Unlock()
 }
 
+// GetCollectFreq returns value of CollectFreq field.
 func (c *Configuration) GetCollectFreq() int64 {
 	c.RWMutex.RLock()
 	defer c.RWMutex.RUnlock()
 	return c.CollectFreq
 }
+
+// SetCollectFreq sets value for CollectFreq field.
 func (c *Configuration) SetCollectFreq(collectFreq int64) {
 	c.RWMutex.Lock()
 	c.CollectFreq = collectFreq
 	c.RWMutex.Unlock()
 }
 
+// GetSendFreq returns value of SendFreq field.
 func (c *Configuration) GetSendFreq() int64 {
 	c.RWMutex.RLock()
 	defer c.RWMutex.RUnlock()
 	return c.SendFreq
 }
+
+// SetSendFreq sets value for SendFreq field.
 func (c *Configuration) SetSendFreq(sendFreq int64) {
 	c.RWMutex.Lock()
 	c.SendFreq = sendFreq
@@ -144,7 +177,7 @@ func (s *ConfigService) setInitConfig() {
 		panic("init config translation to []byte has failed")
 	}
 
-	s.updateConfig(buf)
+	s.patchConfig(buf)
 }
 
 func (s *ConfigService) listenConfigPatch() {
@@ -171,31 +204,25 @@ func (s *ConfigService) listenConfigPatch() {
 	conn.QueueSubscribe(subject, queue, func(msg *nats.Msg) {
 		eventStore := pb.EventStore{}
 		if err := proto.Unmarshal(msg.Data, &eventStore); err == nil {
-			s.updateConfig(bytes.NewBufferString(eventStore.EventData))
+			s.patchConfig(bytes.NewBufferString(eventStore.EventData))
 		}
 	})
 }
 
-func (s *ConfigService) updateConfig(buf *bytes.Buffer) {
-	var temp = s.Config.FridgeConfig
-	if err := json.NewDecoder(buf).Decode(&temp); err != nil {
-		s.Log.Error("ConfigService: updateConfig(): Decode() has failed: ", err)
+func (s *ConfigService) patchConfig(buf *bytes.Buffer) {
+	var patchedConfig = s.Config.GetFridgeConfig()
+	if err := json.NewDecoder(buf).Decode(&patchedConfig); err != nil {
+		s.Log.Error("ConfigService: patchConfig(): Decode() has failed: ", err)
 		panic("config decoding has failed")
 	}
 
-	if temp.TurnedOn && !s.Config.TurnedOn {
+	if patchedConfig.TurnedOn && !s.Config.GetTurnedOn() {
 		s.Log.Info("fridge is running")
-	} else if !temp.TurnedOn && s.Config.TurnedOn {
+	} else if !patchedConfig.TurnedOn && s.Config.GetTurnedOn() {
 		s.Log.Info("fridge is on pause")
 	}
 
-	s.Config.FridgeConfig = temp
+	s.Config.SetFridgeConfig(patchedConfig)
 	s.Log.Infof("current config: %+v", s.Config.FridgeConfig)
 	s.Config.publishConfigIsPatched()
-}
-
-func (c *Configuration) publishConfigIsPatched() {
-	for _, v := range c.SubsPool {
-		v <- struct{}{}
-	}
 }
