@@ -44,15 +44,15 @@ type FridgeDatum struct {
 // TopCompart channel receives generated data for the first
 // compartment, and BotCompart - for the second one.
 type DataService struct {
-	Config         *Configuration
-	Meta           *entities.DevMeta
-	Controller     *entities.ServicesController
-	TopCompart     chan FridgeDatum
-	BotCompart     chan FridgeDatum
-	ReqChan        chan SaveFridgeDataRequest
-	Center         entities.Server
-	Log            *logrus.Logger
-	ReconnInterval time.Duration
+	Config        *Configuration
+	Meta          *entities.DevMeta
+	Controller    *entities.ServicesController
+	TopCompart    chan FridgeDatum
+	BotCompart    chan FridgeDatum
+	ReqChan       chan SaveFridgeDataRequest
+	Center        entities.Server
+	Log           *logrus.Logger
+	RetryInterval time.Duration
 }
 
 // NewDataService creates and initializes new DataService object.
@@ -60,15 +60,15 @@ type DataService struct {
 func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
 	l *logrus.Logger, r time.Duration) *DataService {
 	return &DataService{
-		TopCompart:     make(chan FridgeDatum, 100),
-		BotCompart:     make(chan FridgeDatum, 100),
-		ReqChan:        make(chan SaveFridgeDataRequest),
-		Config:         c,
-		Meta:           m,
-		Center:         s,
-		Controller:     ctrl,
-		Log:            l,
-		ReconnInterval: r,
+		TopCompart:    make(chan FridgeDatum, 100),
+		BotCompart:    make(chan FridgeDatum, 100),
+		ReqChan:       make(chan SaveFridgeDataRequest),
+		Config:        c,
+		Meta:          m,
+		Center:        s,
+		Controller:    ctrl,
+		Log:           l,
+		RetryInterval: r,
 	}
 }
 
@@ -254,7 +254,7 @@ func (s *DataService) sendData() {
 		}
 	}()
 
-	conn := dial(s.Center, s.Log, s.ReconnInterval)
+	conn := dial(s.Center, s.Log, s.RetryInterval)
 	defer conn.Close()
 
 	for {
@@ -297,7 +297,7 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 	client := pb.NewCenterServiceClient(conn)
 	for conn.GetState() != connectivity.Ready {
 		s.Log.Error("DataService: saveFridgeData(): center connectivity status: NOT READY")
-		duration := time.Duration(rand.Intn(int(s.ReconnInterval.Seconds())))
+		duration := time.Duration(rand.Intn(int(s.RetryInterval.Seconds())))
 		time.Sleep(time.Second*duration + 1)
 	}
 

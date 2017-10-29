@@ -114,27 +114,27 @@ func (c *Configuration) SetSendFreq(sendFreq int64) {
 // ConfigService is used to handle device's configuration parameters
 // manipulation.
 type ConfigService struct {
-	Config         *Configuration
-	Center         entities.Server
-	Controller     *entities.ServicesController
-	Meta           *entities.DevMeta
-	Log            *logrus.Logger
-	ReconnInterval time.Duration
+	Config        *Configuration
+	Center        entities.Server
+	Controller    *entities.ServicesController
+	Meta          *entities.DevMeta
+	Log           *logrus.Logger
+	RetryInterval time.Duration
 }
 
 // NewConfigService creates and initializes new ConfigService object.
 // It returns initialized object.
 func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
-	l *logrus.Logger, reconn time.Duration) *ConfigService {
+	l *logrus.Logger, r time.Duration) *ConfigService {
 	return &ConfigService{
 		Meta: m,
 		Config: &Configuration{
 			SubsPool: make(map[string]chan struct{}),
 		},
-		Center:         s,
-		Controller:     ctrl,
-		Log:            l,
-		ReconnInterval: reconn,
+		Center:        s,
+		Controller:    ctrl,
+		Log:           l,
+		RetryInterval: r,
 	}
 }
 
@@ -155,13 +155,13 @@ func (s *ConfigService) setInitConfig() {
 		},
 	}
 
-	conn := dial(s.Center, s.Log, s.ReconnInterval)
+	conn := dial(s.Center, s.Log, s.RetryInterval)
 	defer conn.Close()
 
 	client := pb.NewCenterServiceClient(conn)
 	for conn.GetState() != connectivity.Ready {
 		s.Log.Error("ConfigService: setInitConfig(): center connectivity status: NOT READY")
-		duration := time.Duration(rand.Intn(int(s.ReconnInterval.Seconds())))
+		duration := time.Duration(rand.Intn(int(s.RetryInterval.Seconds())))
 		time.Sleep(time.Second*duration + 1)
 	}
 
@@ -191,7 +191,7 @@ func (s *ConfigService) listenConfigPatch() {
 	conn, err := nats.Connect(nats.DefaultURL)
 	for err != nil {
 		s.Log.Error("ConfigService: listenConfigPatch(): nats connectivity status: DISCONNECTED")
-		duration := time.Duration(rand.Intn(int(s.ReconnInterval.Seconds())))
+		duration := time.Duration(rand.Intn(int(s.RetryInterval.Seconds())))
 		time.Sleep(time.Second*duration + 1)
 		conn, err = nats.Connect(nats.DefaultURL)
 	}

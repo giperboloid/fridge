@@ -10,10 +10,13 @@ import (
 
 const (
 	devType                 = "fridge"
+
 	localhost               = "127.0.0.1"
+
 	defaultCenterConfigPort = "3092"
 	defaultCenterDataPort   = "3126"
-	reconnInterval          = time.Second * 10
+
+	retryInterval           = time.Second * 10
 )
 
 var (
