@@ -116,7 +116,7 @@ func (c *Configuration) SetSendFreq(sendFreq int64) {
 type ConfigService struct {
 	Config        *Configuration
 	Center        entities.Server
-	Controller    *entities.ServicesController
+	Controller    *entities.ServiceController
 	Meta          *entities.DevMeta
 	Log           *logrus.Logger
 	RetryInterval time.Duration
@@ -124,7 +124,7 @@ type ConfigService struct {
 
 // NewConfigService creates and initializes new ConfigService object.
 // It returns initialized object.
-func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
+func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.ServiceController,
 	l *logrus.Logger, r time.Duration) *ConfigService {
 	return &ConfigService{
 		Meta: m,
@@ -142,7 +142,7 @@ func NewConfigService(m *entities.DevMeta, s entities.Server, ctrl *entities.Ser
 // for configuration patches from the center.
 func (s *ConfigService) Run() {
 	s.setInitConfig()
-	go s.listenConfigPatch()
+	go s.listenConfigPatches()
 }
 
 func (s *ConfigService) setInitConfig() {
@@ -180,17 +180,17 @@ func (s *ConfigService) setInitConfig() {
 	s.patchConfig(buf)
 }
 
-func (s *ConfigService) listenConfigPatch() {
+func (s *ConfigService) listenConfigPatches() {
 	defer func() {
 		if r := recover(); r != nil {
-			s.Log.Errorf("ConfigService: listenConfigPatch(): panic(): %s", r)
+			s.Log.Errorf("ConfigService: listenConfigPatches(): panic(): %s", r)
 			s.Controller.Terminate()
 		}
 	}()
 
 	conn, err := nats.Connect(nats.DefaultURL)
 	for err != nil {
-		s.Log.Error("ConfigService: listenConfigPatch(): nats connectivity status: DISCONNECTED")
+		s.Log.Error("ConfigService: listenConfigPatches(): nats connectivity status: DISCONNECTED")
 		duration := time.Duration(rand.Intn(int(s.RetryInterval.Seconds())))
 		time.Sleep(time.Second*duration + 1)
 		conn, err = nats.Connect(nats.DefaultURL)

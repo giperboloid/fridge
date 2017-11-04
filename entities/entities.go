@@ -17,14 +17,14 @@ type DevMeta struct {
 	MAC  string
 }
 
-// ServicesController is used to store StopChan that allows to terminate
+// ServiceController is used to store StopChan that allows to terminate
 // all the services that listen the channel.
-type ServicesController struct {
+type ServiceController struct {
 	StopChan chan struct{}
 }
 
 // Terminate closes StopChan to signal all the services to shutdown.
-func (c *ServicesController) Terminate() {
+func (c *ServiceController) Terminate() {
 	select {
 	case <-c.StopChan:
 	default:
@@ -34,7 +34,7 @@ func (c *ServicesController) Terminate() {
 
 // Wait waits until StopChan will be closed and then makes a pause for 3 seconds
 // in order to give time for all the services shutdown gracefully.
-func (c *ServicesController) Wait() {
+func (c *ServiceController) Wait() {
 	<-c.StopChan
 	<-time.NewTimer(time.Second * 3).C
 }

@@ -46,7 +46,7 @@ type FridgeDatum struct {
 type DataService struct {
 	Config        *Configuration
 	Meta          *entities.DevMeta
-	Controller    *entities.ServicesController
+	Controller    *entities.ServiceController
 	TopCompart    chan FridgeDatum
 	BotCompart    chan FridgeDatum
 	ReqChan       chan SaveFridgeDataRequest
@@ -57,7 +57,7 @@ type DataService struct {
 
 // NewDataService creates and initializes new DataService object.
 // It returns initialized object.
-func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServicesController,
+func NewDataService(c *Configuration, m *entities.DevMeta, s entities.Server, ctrl *entities.ServiceController,
 	l *logrus.Logger, r time.Duration) *DataService {
 	return &DataService{
 		TopCompart:    make(chan FridgeDatum, 100),

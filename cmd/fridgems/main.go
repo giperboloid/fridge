@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	ctrl := &entities.ServicesController{
+	ctrl := &entities.ServiceController{
 		StopChan: make(chan struct{}),
 	}
 

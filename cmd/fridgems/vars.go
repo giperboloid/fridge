@@ -28,7 +28,7 @@ var (
 	centerConfigPort = getEnvVar("CENTER_CONFIG_TCP_PORT", defaultCenterConfigPort)
 )
 
-// getEnvVar checks whether environmental variable with name 'key' was specified.
+// GetEnvVar checks whether environmental variable with name 'key' was specified.
 // It returns that variable if it was set and defaultVal otherwise.
 func getEnvVar(key string, defaultVal string) string {
 	val := os.Getenv(key)
@@ -38,7 +38,7 @@ func getEnvVar(key string, defaultVal string) string {
 	return val
 }
 
-// checkCLIArgs checks whether vital args were passed. If not - panic occurs.
+// CheckCLIArgs checks whether vital args were passed. If not - panic occurs.
 func checkCLIArgs() {
 	if len(devMeta.Name) == 0 {
 		panic("device name is missing")
