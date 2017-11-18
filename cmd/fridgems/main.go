@@ -1,10 +1,11 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/giperboloid/fridgems/entities"
 	"github.com/giperboloid/fridgems/services"
-	"flag"
 )
 
 func main() {
