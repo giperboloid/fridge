@@ -1,8 +1,19 @@
 syntax = "proto3";
-package pb;
+package api;
 
 // Run protoc -I pb/ pb/fridgems.proto --go_out=plugins=grpc:pb
 // to generate fridgems.pb.go
+
+/* Run
+
+ protoc -I api/pb/ api/pb/api.proto \
+ -I/usr/local/include \
+ -I${GOPATH}/src \
+ -I${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+ --go_out=plugins=grpc:api/pb
+
+ to generate api.pb.go
+*/
 
 // EventStore is for NATS pub/sub
 message EventStore {

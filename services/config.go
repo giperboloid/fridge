@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/giperboloid/fridgems/api/pb"
 	"github.com/giperboloid/fridgems/entities"
-	"github.com/giperboloid/fridgems/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/go-nats"
 	"golang.org/x/net/context"
@@ -146,9 +146,9 @@ func (s *ConfigService) Run() {
 }
 
 func (s *ConfigService) setInitConfig() {
-	req := &pb.SetDevInitConfigRequest{
+	req := &api.SetDevInitConfigRequest{
 		Time: time.Now().UnixNano(),
-		Meta: &pb.DevMeta{
+		Meta: &api.DevMeta{
 			Type: s.Meta.Type,
 			Name: s.Meta.Name,
 			Mac:  s.Meta.MAC,
@@ -158,7 +158,7 @@ func (s *ConfigService) setInitConfig() {
 	conn := dial(s.Center, s.Log, s.RetryInterval)
 	defer conn.Close()
 
-	client := pb.NewCenterServiceClient(conn)
+	client := api.NewCenterServiceClient(conn)
 	for conn.GetState() != connectivity.Ready {
 		s.Log.Error("ConfigService: setInitConfig(): center connectivity status: NOT READY")
 		duration := time.Duration(rand.Intn(int(s.RetryInterval.Seconds())))
@@ -202,7 +202,7 @@ func (s *ConfigService) listenConfigPatches() {
 	subject := "Config.Patch." + s.Meta.MAC
 
 	conn.QueueSubscribe(subject, queue, func(msg *nats.Msg) {
-		eventStore := pb.EventStore{}
+		eventStore := api.EventStore{}
 		if err := proto.Unmarshal(msg.Data, &eventStore); err == nil {
 			s.patchConfig(bytes.NewBufferString(eventStore.EventData))
 		}

@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/giperboloid/fridgems/api/pb"
 	"github.com/giperboloid/fridgems/entities"
-	"github.com/giperboloid/fridgems/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -284,9 +284,9 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 		panic("FridgeData can't be encoded for sending")
 	}
 
-	req := &pb.SaveDevDataRequest{
+	req := &api.SaveDevDataRequest{
 		Time: fr.Time,
-		Meta: &pb.DevMeta{
+		Meta: &api.DevMeta{
 			Type: fr.Meta.Type,
 			Name: fr.Meta.Name,
 			Mac:  fr.Meta.MAC,
@@ -294,7 +294,7 @@ func (s *DataService) saveFridgeData(fr SaveFridgeDataRequest, conn *grpc.Client
 		Data: buf.Bytes(),
 	}
 
-	client := pb.NewCenterServiceClient(conn)
+	client := api.NewCenterServiceClient(conn)
 	for conn.GetState() != connectivity.Ready {
 		s.Log.Error("DataService: saveFridgeData(): center connectivity status: NOT READY")
 		duration := time.Duration(rand.Intn(int(s.RetryInterval.Seconds())))
