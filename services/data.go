@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/giperboloid/fridgems/api/pb"
-	"github.com/giperboloid/fridgems/entities"
+	"github.com/kostiamol/fridgems/api/pb"
+	"github.com/kostiamol/fridgems/entities"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )

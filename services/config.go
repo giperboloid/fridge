@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/giperboloid/fridgems/api/pb"
-	"github.com/giperboloid/fridgems/entities"
+	"github.com/kostiamol/fridgems/api/pb"
+	"github.com/kostiamol/fridgems/entities"
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/go-nats"
 	"golang.org/x/net/context"

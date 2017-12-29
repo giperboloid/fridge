@@ -4,8 +4,8 @@ import (
 	"flag"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/giperboloid/fridgems/entities"
-	"github.com/giperboloid/fridgems/services"
+	"github.com/kostiamol/fridgems/entities"
+	"github.com/kostiamol/fridgems/services"
 )
 
 func main() {

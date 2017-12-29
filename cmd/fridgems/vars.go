@@ -5,7 +5,7 @@ import (
 
 	"time"
 
-	"github.com/giperboloid/fridgems/entities"
+	"github.com/kostiamol/fridgems/entities"
 )
 
 const (
