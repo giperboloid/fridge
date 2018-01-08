@@ -1,21 +1,22 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kostiamol/fridgems)](https://goreportcard.com/report/github.com/kostiamol/fridgems)
 [![Coverage Status](https://coveralls.io/repos/github/kostiamol/fridgems/badge.svg?branch=master)](https://coveralls.io/github/kostiamol/fridgems?branch=master)
 [![Build Status](https://travis-ci.org/kostiamol/fridgems.svg?branch=master)](https://travis-ci.org/kostiamol/fridgems)
-# device-smart-house
-Standard dial-up settings.
-Sends to: 
-HOST = "localhost"
-PORT = "3030"
-TYPE = "tcp"
 
-Listen to: 
-HOST = "localhost"
-PORT = "8080"
-TYPE = "tcp"
+# fridgems
+The project implements a device-side management automation for a home.
 
-Standard device's config:
-It generates random data ever second. It collects and sends data to centre every 5 sec.
-Device is turned on from the beginning. 
+## Quickstart
+1. Download and install the fridgems:
 
-Used 3rd libraries: 
-github.com/Sirupsen/logrus - for logging
+```bash
+go get github.com/kostiamol/fridgems
+```
+
+2. Compile and run the fridgems:
+
+```bash
+cd $GOPATH/src/github.com/kostiamol/fridgems/cmd/fridgems
+go build 
+./fridgems -name=LG -mac=FF-FF-FF-FF-FF-FF
+```
+3. For proper functioning of the system as a whole install and run the [centerms](https://github.com/kostiamol/centerms) and the [dashboard](https://github.com/kostiamol/dashboard-ui).
