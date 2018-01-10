@@ -1,5 +1,7 @@
-FROM alpine
-MAINTAINER Molchanov Kostiantyn (kostyamol@gmail.com)
+FROM alpine:latest
+MAINTAINER Kostiantyn Molchanov (kostyamol@gmail.com)
+
+RUN apk --no-cache add ca-certificates
 
 RUN mkdir -p /home/fridgems/bin
 
@@ -12,4 +14,4 @@ RUN \
     
 USER daemon
 ENTRYPOINT ["./fridgems"]
-CMD ["LG", "FF:FF:FF:FF:FF:FF"]
+CMD ["-name=LG", "-mac=FF:FF:FF:FF:FF:FF"]
