@@ -1,34 +1,24 @@
 language: go
 sudo: false
 go:
-- 1.9
-- tip
+    - 1.11
+    - tip
 matrix:
-  allow_failures:
-  - go: tip
-  fast_finish: true
+    allow_failures:
+        - go: tip
+    fast_finish: true
 notifications:
-  email: false
+    email: false
 before_script:
-- GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
-- go get github.com/golang/lint/golint
-- go get honnef.co/go/tools/cmd/megacheck
-- go get github.com/fzipp/gocyclo
-- go get golang.org/x/tools/cmd/cover
-- go get github.com/mattn/goveralls
+    - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
+    - go get github.com/golang/lint/golint
+    - go get honnef.co/go/tools/cmd/megacheck
+    - go get github.com/fzipp/gocyclo
+    - go get golang.org/x/tools/cmd/cover
+    - go get github.com/mattn/goveralls
 script:
-- go test -v -race ./...
-- go vet ./...
-- gocyclo -over 19 $GO_FILES
-- golint -set_exit_status $(go list ./...)
-- "$GOPATH/bin/goveralls -service=travis-ci"
-before_deploy:
-- go build ./cmd/fridgems
-deploy:
-  provider: heroku
-  skip_cleanup: true
-  api_key:
-    secure: Di1AxOWtvpdbcn1H7Yl3v1wicfeZsL1GYQhVN0NIiAoz/6coyjvCdOj1UvhlWyVTK8U0D3NERSREbU7ikmRT6XBGV+HEPwZwZM9fdCGY9uFdbfzW5bFZe7TkKlnVYVabvuF3g2YY9MTIs4TGKLC4i9zAbwOidmMKtllJLULHdNVPwhq154E9hDSG0TxqEDm8OVmnb5i7qnTcE3dvD37AZ2rgkz3V3VQTIOofqsHD8NUMbSDk6U0p+GBiqexhgnBQngbCgzlF+ZjIzWfhVEBm4H+Gl32NYUd6CulQ180SZ4V1/IgoJuJTqjZxR6OrrEdXjhqvVbgxUbt3Ze6nJ3Jrx/lWtzqArOORQjz9rZVjKbFS8mJjc95ikKdZWoziDmy2ybwOh7spBz3R0W5PGfvf5E2sdyqSZXL3eOyyOZ2SJrdEd6INx07FU1sLDzzeXVTxJOVcnNBwG1IqhJDzVqT5Zgauh7vU3pyD/jYgnHxbAoC+Q27To6oX90Ez2GXvQj9ui//hGlB1nZgV7AKnJK0zEFifNyRigd0JEfrEWHM4IAQ9w2fELEudMN6KtgaVYGBrrTzbcZyqo4uFxeH8kTEK/l68akKYCzObHMdo4pimIgtW+mxSY+uTEUiaWbbE+9WbZ75bJZ8jr+8yqmuZweTb+LCrYTcTYPLjXyje52McKEs=
-  on: master
-  app: shms-fridge
-  file: fridgems
+    - go test -v -race ./...
+    - go vet ./...
+    - gocyclo -over 19 $GO_FILES
+    - golint -set_exit_status $(go list ./...)
+    - "$GOPATH/bin/goveralls -service=travis-ci"
