@@ -1,5 +1,4 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kostiamol/fridgems)](https://goreportcard.com/report/github.com/kostiamol/fridgems)
-[![Coverage Status](https://coveralls.io/repos/github/kostiamol/fridgems/badge.svg?branch=master)](https://coveralls.io/github/kostiamol/fridgems?branch=master)
 [![Build Status](https://travis-ci.org/kostiamol/fridgems.svg?branch=master)](https://travis-ci.org/kostiamol/fridgems)
 
 # fridgems
@@ -19,4 +18,4 @@ cd $GOPATH/src/github.com/kostiamol/fridgems/cmd/fridgems
 go build 
 ./fridgems -name=LG -mac=FF-FF-FF-FF-FF-FF
 ```
-3. For proper functioning of the system as a whole install and run the [centerms](https://github.com/kostiamol/centerms) and the [dashboard](https://github.com/kostiamol/dashboard-ui).
+3. For proper functioning of the system as a whole, install and run the [centerms](https://github.com/kostiamol/centerms) and the [dashboard](https://github.com/kostiamol/dashboard-ui).
