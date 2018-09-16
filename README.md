@@ -5,6 +5,7 @@
 The project implements a device-side management automation for a home.
 
 <p align="center"><img src="docs/assets/Schema.png" width="800"></p>
+
 ## Quickstart
 1. Download and install the fridgems:
 
